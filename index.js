@@ -33,8 +33,9 @@ const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
 io.on("connection", (socket) => {
-  socket.on("login", async ({ token, room }, callback) => {
+  socket.on("login", async ({ token, room, animeMeta }, callback) => {
     if (!token)
       return callback({
         error: "Token is required",
@@ -44,6 +45,22 @@ io.on("connection", (socket) => {
       return callback({
         error: "Room is required",
       });
+
+    if (!animeMeta || animeMeta.toString() !== "[object Object]") {
+      return callback({
+        error: "Anime meta is required",
+      });
+    }
+
+    let getVal = cache.get(ptr, `${room}_animeMeta`);
+
+    if (getVal && JSON.stringify(getVal.value) != JSON.stringify(animeMeta)) {
+      getVal = getVal.value;
+      return callback({
+        error: "Fansub, episode, season or slug mismatch",
+        redirect: `/anime/${getVal.slug}/${getVal.season}/${getVal.episode}?fansub=${getVal.fansub}`,
+      });
+    }
 
     const { user, error } = await addUser(socket.id, token, room);
 
@@ -56,6 +73,8 @@ io.on("connection", (socket) => {
 
     if (!clients) {
       //make the first person in the room moderator
+      console.log(animeMeta);
+      cache.add(ptr, `${user.room}_animeMeta`, animeMeta);
       user.moderator = true;
     }
 
