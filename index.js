@@ -203,6 +203,13 @@ io.on("connection", (socket) => {
     console.log("User disconnected");
     const user = deleteUser(socket.id);
     if (user) {
+      const clients = io.sockets.adapter.rooms.get(user.room);
+      if (!clients) {
+        //if everybody left the room remove these caches
+        cache.remove(ptr, `${user.room}_latestTimestamp`);
+        cache.remove(ptr, `${user.room}_animeMeta`);
+      }
+
       io.in(user.room).emit("notification", {
         title: "Someone just left",
         description: `${user.username} just left the room`,
