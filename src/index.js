@@ -1,24 +1,19 @@
-import * as dotenv from "dotenv";
-import * as cache from "./cache.js";
-const ptr = cache.new_cache();
-cache.start_cache(ptr);
-dotenv.config();
-
 import http from "node:http";
+import { config } from "dotenv";
 import { Server } from "socket.io";
-
+import * as cache from "./util/cache.js";
 import {
   addUser,
   deleteUser,
   getUsers,
   getUserBySocket,
   getUserById,
-  getUserByToken,
-} from "./users.js";
+} from "./util/users.js";
 
-export function getMainCache() {
-  return ptr;
-}
+config();
+
+const ptr = cache.new_cache();
+cache.start_cache(ptr);
 
 const options = {
   cors: true,
@@ -218,3 +213,7 @@ io.on("connection", (socket) => {
     }
   });
 });
+
+export function getMainCache() {
+  return ptr;
+}

@@ -1,7 +1,7 @@
-import { request } from "undici";
-import { getMainCache } from "./index.js";
-import { get } from "./cache.js";
 import jwt from "jsonwebtoken";
+import { request } from "undici";
+import { getMainCache } from "../index.js";
+import { get } from "./cache.js";
 
 const users = [];
 
