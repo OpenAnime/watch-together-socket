@@ -1,19 +1,28 @@
 {
-  "name": "watch-together-socket",
-  "version": "1.0.0",
-  "description": "",
-  "main": "src/index.js",
-  "scripts": {
-    "dev": "node ."
-  },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "dotenv": "^16.0.3",
-    "jsonwebtoken": "^9.0.0",
-    "socket.io": "^4.6.1",
-    "undici": "^5.21.2"
-  },
-  "type": "module"
+    "name": "watch-together-socket",
+    "version": "1.0.0",
+    "description": "",
+    "main": "src/index.js",
+    "scripts": {
+        "dev": "node .",
+        "format": "prettier --write .",
+        "lint": "eslint . --ext .js",
+        "lint:fix": "eslint . --ext .js --fix"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "dependencies": {
+        "dotenv": "^16.0.3",
+        "jsonwebtoken": "^9.0.0",
+        "socket.io": "^4.6.1",
+        "undici": "^5.21.2"
+    },
+    "type": "module",
+    "devDependencies": {
+        "eslint": "^8.43.0",
+        "eslint-config-prettier": "^8.8.0",
+        "eslint-plugin-prettier": "^4.2.1",
+        "prettier": "^2.8.8"
+    }
 }

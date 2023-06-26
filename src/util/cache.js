@@ -13,15 +13,13 @@ struct Item
 buralari okianos duhæn hoj yazmis gormezden gelin tovbe edin
 */
 
-
-
 const times = {
-    "s": 1000,
-    "m": 60000,
-    "h": 3600000,
-    "w": 604800000,
-    "d": 86400000,
-}
+    s: 1000,
+    m: 60000,
+    h: 3600000,
+    w: 604800000,
+    d: 86400000,
+};
 
 function new_cache() {
     const ptr = {
@@ -31,11 +29,13 @@ function new_cache() {
     return ptr;
 }
 
-function add(ptr, key, value, expr, otherOptions) {
+function add(ptr, key, value, expr) {
     const idx = ptr.items.findIndex((i) => i.key === key);
     const multiplier = expr ? times[expr.slice(-1)] : null;
     if (!multiplier && expr) {
-        console.error("Invalid time format. Please use m, w or d. (m = minutes, w = weeks, d = days)");
+        console.error(
+            'Invalid time format. Please use m, w or d. (m = minutes, w = weeks, d = days)'
+        );
         return;
     }
 
@@ -43,18 +43,16 @@ function add(ptr, key, value, expr, otherOptions) {
         ptr.items[idx] = {
             key,
             value,
-            expire: expr ? Date.now() + (expr.substring(0, expr.length - 1) * multiplier) : undefined,
-        }
+            expire: expr ? Date.now() + expr.substring(0, expr.length - 1) * multiplier : undefined,
+        };
     } else {
         ptr.items.push({
             key,
             value,
-            expire: expr ? Date.now() + (expr.substring(0, expr.length - 1) * multiplier) : undefined,
+            expire: expr ? Date.now() + expr.substring(0, expr.length - 1) * multiplier : undefined,
         });
     }
 }
-
-
 
 function remove(ptr, key) {
     ptr.items = ptr.items.filter((i) => i.key !== key);
@@ -66,8 +64,7 @@ function get(ptr, key) {
 
 function delete_expired(ptr) {
     ptr.items.forEach((item) => {
-        if (item.expire <= Date.now())
-            remove(ptr, item.key);
+        if (item.expire <= Date.now()) remove(ptr, item.key);
     });
 }
 
@@ -79,11 +76,4 @@ async function start_cache(ptr) {
     }, 1000);
 }
 
-export {
-    new_cache,
-    add,
-    remove,
-    get,
-    delete_expired,
-    start_cache,
-};
+export { new_cache, add, remove, get, delete_expired, start_cache };
