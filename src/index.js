@@ -31,15 +31,20 @@ server.listen(PORT, () => {
 });
 
 io.on('connection', (socket) => {
-    socket.on('login', async ({ token, room, animeMeta }, callback) => {
+    socket.on('login', async ({ token, roomName, roomPassword, animeMeta }, callback) => {
         if (!token)
             return callback({
                 error: 'Token is required',
             });
 
-        if (!room)
+        if (!roomName)
             return callback({
-                error: 'Room is required',
+                error: 'Room name is required',
+            });
+
+        if (!roomPassword)
+            return callback({
+                error: 'Room password is required',
             });
 
         if (!animeMeta || animeMeta.toString() !== '[object Object]') {
@@ -48,7 +53,16 @@ io.on('connection', (socket) => {
             });
         }
 
-        let getVal = cache.get(ptr, `${room}_animeMeta`);
+        const getPass = cache.get(ptr, `${roomName}_password`);
+        if (getPass?.value) {
+            if (getPass.value != roomPassword) {
+                return callback({
+                    error: 'Wrong password',
+                });
+            }
+        }
+
+        let getVal = cache.get(ptr, `${roomName}_animeMeta`);
 
         if (getVal && JSON.stringify(getVal.value) != JSON.stringify(animeMeta)) {
             getVal = getVal.value;
@@ -58,7 +72,7 @@ io.on('connection', (socket) => {
             });
         }
 
-        const { user, error } = await addUser(socket.id, token, room);
+        const { user, error } = await addUser(socket.id, token, roomName);
 
         if (error)
             return callback({
@@ -71,17 +85,18 @@ io.on('connection', (socket) => {
             //make the first person in the room moderator
             console.log(animeMeta);
             cache.add(ptr, `${user.room}_animeMeta`, animeMeta);
+            cache.add(ptr, `${roomName}_password`, roomPassword);
             user.moderator = true;
         }
 
         socket.join(user.room);
 
-        socket.in(room).emit('system', {
+        socket.in(roomName).emit('system', {
             content: `${user.username} odaya katıldı 👋`,
             ...baseChatBotProps,
         });
-        io.in(room).emit('users', getUsers(room));
-        const startFrom = cache.get(ptr, `${user.room}_latestTimestamp`)?.value ?? 0;
+        io.in(roomName).emit('users', getUsers(roomName));
+        const startFrom = cache.get(ptr, `${user.roomName}_latestTimestamp`)?.value ?? 0;
 
         callback({
             message: 'success',
@@ -234,6 +249,7 @@ io.on('connection', (socket) => {
                 //if everybody left the room remove these caches
                 cache.remove(ptr, `${user.room}_latestTimestamp`);
                 cache.remove(ptr, `${user.room}_animeMeta`);
+                cache.remove(ptr, `${user.room}_password`);
             }
 
             io.in(user.room).emit('notification', {
