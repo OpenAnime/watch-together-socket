@@ -96,7 +96,7 @@ io.on('connection', (socket) => {
             ...baseChatBotProps,
         });
         io.in(roomName).emit('users', getUsers(roomName));
-        const startFrom = cache.get(ptr, `${user.roomName}_latestTimestamp`)?.value ?? 0;
+        const startFrom = cache.get(ptr, `${user.room}_latestTimestamp`)?.value ?? 0;
 
         callback({
             message: 'success',
