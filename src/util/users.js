@@ -30,7 +30,8 @@ export const addUser = async (id, token, room) => {
                     error: 'User is already in the same room',
                 });
 
-            const muted = get(getMainCache(), `mutedState_${json.id}_${room}`)?.value ?? false;
+            const getMutedParticipants = get(getMainCache(), `${room}_mutedUsers`)?.value ?? [];
+            const muted = getMutedParticipants.includes(json.id);
             const getBannedUsers = get(getMainCache(), `${room}_bannedUsers`)?.value ?? [];
             const banned = getBannedUsers.find((x) => (x.userID = json.id));
 

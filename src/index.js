@@ -144,6 +144,9 @@ io.on('connection', (socket) => {
         if (args?.operation == 'mute') {
             console.log(target);
             target.muted = true;
+            const getMutedParticipants = cache.get(ptr, `${user.room}_mutedUsers`)?.value ?? [];
+            getMutedParticipants.push(args.userID);
+            cache.add(ptr, `${user.room}_mutedUsers`, getMutedParticipants);
             cache.add(ptr, `mutedState_${args.userID}_${user.room}`, true);
 
             io.in(user.room).emit('system', {
@@ -152,7 +155,10 @@ io.on('connection', (socket) => {
             });
         } else if (args?.operation == 'unmute') {
             target.muted = false;
-            cache.remove(ptr, `mutedState_${args.userID}_${user.room}`);
+            let getMutedParticipants = cache.get(ptr, `${user.room}_mutedUsers`)?.value ?? [];
+            getMutedParticipants = getMutedParticipants.filter((id) => id != args.userID);
+            const key = getMutedParticipants.length == 0 ? 'remove' : 'add';
+            cache[key](ptr, `${user.room}_mutedUsers`, getMutedParticipants);
 
             io.in(user.room).emit('system', {
                 content: `${user.username}, ${target.username} kullanıcısının susturmasını kaldırdı`,
@@ -271,6 +277,7 @@ io.on('connection', (socket) => {
                 cache.remove(ptr, `${user.room}_animeMeta`);
                 cache.remove(ptr, `${user.room}_password`);
                 cache.remove(ptr, `${user.room}_bannedUsers`);
+                cache.remove(ptr, `${user.room}_mutedUsers`);
             }
 
             io.in(user.room).emit('notification', {
