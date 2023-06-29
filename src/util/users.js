@@ -31,7 +31,8 @@ export const addUser = async (id, token, room) => {
                 });
 
             const muted = get(getMainCache(), `mutedState_${json.id}_${room}`)?.value ?? false;
-            const banned = get(getMainCache(), `bannedState_${json.id}_${room}`)?.value ?? false;
+            const getBannedUsers = get(getMainCache(), `${room}_bannedUsers`)?.value ?? [];
+            const banned = getBannedUsers.find((x) => (x.userID = json.id));
 
             if (banned) return resolve({ error: 'You are banned from this room' });
 
@@ -79,12 +80,14 @@ export const deleteUser = (id) => {
     if (index !== -1) return users.splice(index, 1)[0];
 };
 
-export const getUsers = (room) => {
+export const getUsers = (room, showId) => {
     const filteredUsers = users.filter((user) => user.room === room);
     if (filteredUsers.length > 0) {
         return filteredUsers.map((user) => {
             const newPtr = JSON.parse(JSON.stringify(user));
-            delete newPtr.id;
+            if (!showId) {
+                delete newPtr.id;
+            }
             return newPtr;
         });
     }

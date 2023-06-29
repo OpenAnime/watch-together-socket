@@ -124,6 +124,8 @@ io.on('connection', (socket) => {
                     target.moderator = true;
 
                     io.in(user.room).emit('users', getUsers(user.room));
+                    const last = cache.get(ptr, `${user.room}_bannedUsers`)?.value ?? [];
+                    io.to(target.id).emit('bannedUsers', last);
 
                     io.in(user.room).emit('system', {
                         content: `${user.username}, ${target.username} kullanıcısını moderatör olarak atadı`,
@@ -166,8 +168,21 @@ io.on('connection', (socket) => {
             });
         } else if (args?.operation == 'ban') {
             const getTargetSocket = io.sockets.sockets.get(target.id);
-            cache.add(ptr, `bannedState_${args.userID}_${user.room}`, true);
+            const getBannedUsers = cache.get(ptr, `${user.room}_bannedUsers`)?.value ?? [];
+            getBannedUsers.push({
+                userID: target.userID,
+                username: target.username,
+                avatar: target.avatar,
+            });
+            cache.add(ptr, `${user.room}_bannedUsers`, getBannedUsers);
             getTargetSocket.disconnect();
+
+            const getUsersInRoom = getUsers(user.room, true);
+            getUsersInRoom.forEach((user) => {
+                if (user.moderator) {
+                    io.to(user.id).emit('bannedUsers', getBannedUsers);
+                }
+            });
 
             io.in(user.room).emit('system', {
                 content: `${user.username}, ${target.username} kullanıcısının yasakladı`,
@@ -176,9 +191,17 @@ io.on('connection', (socket) => {
         } else if (args?.operation == 'unban') {
             cache.remove(ptr, `bannedState_${args.userID}_${user.room}`);
 
-            io.in(user.room).emit('system', {
-                content: `${user.username}, ${target.username} kullanıcısının yasağını kaldırdı`,
-                ...baseChatBotProps,
+            let getBannedUsers = cache.get(ptr, `${user.room}_bannedUsers`)?.value ?? [];
+            getBannedUsers = getBannedUsers.filter((x) => x.userID != args.userID);
+            const key = getBannedUsers.length == 0 ? 'remove' : 'add';
+            cache[key](ptr, `${user.room}_bannedUsers`, getBannedUsers);
+            const last = cache.get(ptr, `${user.room}_bannedUsers`)?.value ?? [];
+
+            const getUsersInRoom = getUsers(user.room, true);
+            getUsersInRoom.forEach((user) => {
+                if (user.moderator) {
+                    io.to(user.id).emit('bannedUsers', last);
+                }
             });
         }
 
@@ -189,10 +212,8 @@ io.on('connection', (socket) => {
         if (message.trim().length == 0) return;
         const user = JSON.parse(JSON.stringify(getUserBySocket(socket.id)));
         if (user.muted) return;
-        console.log(user);
         user.id = undefined;
         user.author = user.username;
-        console.log(user);
         io.in(user.room).emit('message', {
             ...user,
             content: message,
@@ -200,7 +221,6 @@ io.on('connection', (socket) => {
     });
 
     socket.on('timestamp', (timestamp) => {
-        console.log(timestamp);
         const user = getUserBySocket(socket.id);
         if (isNaN(timestamp)) return;
         const checkAlreadyStored = cache.get(ptr, `${user.room}_latestTimestamp`);
@@ -250,6 +270,7 @@ io.on('connection', (socket) => {
                 cache.remove(ptr, `${user.room}_latestTimestamp`);
                 cache.remove(ptr, `${user.room}_animeMeta`);
                 cache.remove(ptr, `${user.room}_password`);
+                cache.remove(ptr, `${user.room}_bannedUsers`);
             }
 
             io.in(user.room).emit('notification', {
