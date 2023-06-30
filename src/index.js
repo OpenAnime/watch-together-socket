@@ -86,7 +86,9 @@ io.on('connection', (socket) => {
             console.log(animeMeta);
             cache.add(ptr, `${user.room}_animeMeta`, animeMeta);
             cache.add(ptr, `${roomName}_password`, roomPassword);
+            cache.add(ptr, `${user.room}_controlledByMods`, false); //everyone can control
             user.moderator = true;
+            user.owner = true;
         }
 
         socket.join(user.room);
@@ -96,6 +98,9 @@ io.on('connection', (socket) => {
             ...baseChatBotProps,
         });
         io.in(roomName).emit('users', getUsers(roomName));
+        io.in(roomName).emit('settings', {
+            controlledByMods: cache.get(ptr, `${user.room}_controlledByMods`)?.value ?? false,
+        });
         const startFrom = cache.get(ptr, `${user.room}_latestTimestamp`)?.value ?? 0;
 
         callback({
@@ -133,6 +138,19 @@ io.on('connection', (socket) => {
                     });
                 }
             }
+        }
+    });
+
+    socket.on('updateSettings', (args) => {
+        const user = getUserBySocket(socket.id);
+        if (user.owner) {
+            if (typeof args?.controlledByMods == 'boolean') {
+                cache.add(ptr, `${user.room}_controlledByMods`, args.controlledByMods);
+            }
+
+            socket.in(user.room).emit('settings', {
+                controlledByMods: cache.get(ptr, `${user.room}_controlledByMods`)?.value ?? false,
+            });
         }
     });
 
@@ -229,6 +247,8 @@ io.on('connection', (socket) => {
     socket.on('timestamp', (timestamp) => {
         const user = getUserBySocket(socket.id);
         if (isNaN(timestamp)) return;
+        const controlledByMods = cache.get(ptr, `${user.room}_controlledByMods`)?.value ?? false;
+        if (controlledByMods && !user.moderator) return;
         const checkAlreadyStored = cache.get(ptr, `${user.room}_latestTimestamp`);
         if (checkAlreadyStored) {
             if (checkAlreadyStored.value < timestamp) {
@@ -241,6 +261,8 @@ io.on('connection', (socket) => {
 
     socket.on('playerState', (state) => {
         const user = getUserBySocket(socket.id);
+        const controlledByMods = cache.get(ptr, `${user.room}_controlledByMods`)?.value ?? false;
+        if (controlledByMods && !user.moderator) return;
         if ('playing' in state) {
             console.log('içinde');
             socket.broadcast.to(user.room).emit('playerState', {
@@ -255,6 +277,8 @@ io.on('connection', (socket) => {
 
     socket.on('playerTimestamp', (timestamp) => {
         const user = getUserBySocket(socket.id);
+        const controlledByMods = cache.get(ptr, `${user.room}_controlledByMods`)?.value ?? false;
+        if (controlledByMods && !user.moderator) return;
         if ('timestamp' in timestamp) {
             socket.broadcast.to(user.room).emit('playerTimestamp', {
                 timestamp: timestamp.timestamp,
@@ -278,6 +302,7 @@ io.on('connection', (socket) => {
                 cache.remove(ptr, `${user.room}_password`);
                 cache.remove(ptr, `${user.room}_bannedUsers`);
                 cache.remove(ptr, `${user.room}_mutedUsers`);
+                cache.remove(ptr, `${user.room}_controlledByMods`);
             }
 
             io.in(user.room).emit('notification', {
