@@ -113,8 +113,9 @@ io.on('connection', (socket) => {
         if (typeof args?.removeMod == 'boolean' && typeof args?.makeMod == 'boolean') {
             const user = getUserBySocket(socket.id);
 
-            if (user.moderator) {
+            if (user?.owner) {
                 const target = getUserById(args.userID, user.room);
+                if (target?.userID == user?.userID) return;
 
                 if (args.removeMod) {
                     target.moderator = false;
@@ -157,7 +158,11 @@ io.on('connection', (socket) => {
     socket.on('moderationOperation', (args) => {
         const user = getUserBySocket(socket.id);
         const target = getUserById(args.userID, user.room);
-        if (!user?.moderator) return;
+        if (target?.owner == true) return; //can't edit owner
+        if (!user?.moderator) return; //just owners and mods can use
+        if (!user?.owner && target?.moderator) return; //if user is not owner and the target user is mod
+
+        console.log(target, user);
 
         if (args?.operation == 'mute') {
             console.log(target);
