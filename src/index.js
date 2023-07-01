@@ -89,6 +89,14 @@ io.on('connection', (socket) => {
             cache.add(ptr, `${user.room}_controlledByMods`, false); //everyone can control
             user.moderator = true;
             user.owner = true;
+            cache.add(ptr, `${user.room}_owner`, user.userID);
+        } else {
+            //reassign owner role when owner rejoins
+            const getRoomOwner = cache.get(ptr, `${user.room}_owner`);
+            if (getRoomOwner?.value == user.userID) {
+                user.moderator = true;
+                user.owner = true;
+            }
         }
 
         socket.join(user.room);
@@ -308,6 +316,7 @@ io.on('connection', (socket) => {
                 cache.remove(ptr, `${user.room}_bannedUsers`);
                 cache.remove(ptr, `${user.room}_mutedUsers`);
                 cache.remove(ptr, `${user.room}_controlledByMods`);
+                cache.remove(ptr, `${user.room}_owner`);
             }
 
             io.in(user.room).emit('notification', {
