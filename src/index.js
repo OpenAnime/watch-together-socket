@@ -253,7 +253,7 @@ io.on('connection', (socket) => {
         user.author = user.username;
         io.in(user.room).emit('message', {
             ...user,
-            content: message,
+            content: message.trim(),
         });
     });
 
