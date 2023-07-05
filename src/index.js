@@ -1,8 +1,9 @@
-import http from 'node:http';
+import https from 'node:https';
 import { config } from 'dotenv';
 import { Server } from 'socket.io';
 import * as cache from './util/cache.js';
 import { addUser, deleteUser, getUsers, getUserBySocket, getUserById } from './util/users.js';
+import fs from 'fs';
 
 config();
 
@@ -11,7 +12,9 @@ cache.start_cache(ptr);
 
 const options = {
     cors: true,
-    origins: ['http://127.0.0.1:3000'],
+    origins: process.env.CORS_ORIGINS,
+    key: fs.readFileSync('cert/key.pem'),
+    cert: fs.readFileSync('cert/cert.pem'),
 };
 
 const baseChatBotProps = {
@@ -21,7 +24,10 @@ const baseChatBotProps = {
     avatar: process.env.CHATBOT_AVATAR,
 };
 
-const server = http.createServer();
+const server = https.createServer({
+    key: fs.readFileSync('cert/key.pem'),
+    cert: fs.readFileSync('cert/cert.pem'),
+});
 const io = new Server(server, options);
 
 const PORT = process.env.PORT || 3001;
