@@ -1,4 +1,5 @@
 import https from 'node:https';
+import http from 'node:http';
 import { config } from 'dotenv';
 import { Server } from 'socket.io';
 import * as cache from './util/cache.js';
@@ -24,10 +25,14 @@ const baseChatBotProps = {
     avatar: process.env.CHATBOT_AVATAR,
 };
 
-const server = https.createServer({
-    key: fs.readFileSync('cert/key.pem'),
-    cert: fs.readFileSync('cert/cert.pem'),
-});
+const server =
+    process.env.PRODUCTION == 'true'
+        ? https.createServer({
+              key: fs.readFileSync('cert/key.pem'),
+              cert: fs.readFileSync('cert/cert.pem'),
+          })
+        : http.createServer();
+
 const io = new Server(server, options);
 
 const PORT = process.env.PORT || 3001;
@@ -52,6 +57,15 @@ io.on('connection', (socket) => {
             return callback({
                 error: 'Room password is required',
             });
+
+        if (roomPassword.trim().length > 32 || roomName.trim().length > 12) {
+            return callback({
+                error: 'Room password can be up to 32 characters and room name can be up to 12 characters.',
+            });
+        }
+
+        roomPassword = roomPassword.trim();
+        roomName = roomName.trim();
 
         if (!animeMeta || animeMeta.toString() !== '[object Object]') {
             return callback({
@@ -253,6 +267,7 @@ io.on('connection', (socket) => {
 
     socket.on('sendMessage', (message) => {
         if (message.trim().length == 0) return;
+        if (message.trim().length > 250) return;
         const user = JSON.parse(JSON.stringify(getUserBySocket(socket.id)));
         if (user.muted) return;
         user.id = undefined;
