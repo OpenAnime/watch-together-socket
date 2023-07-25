@@ -36,8 +36,9 @@ const server =
 const io = new Server(server, options);
 
 const PORT = process.env.PORT || 3001;
+const HOST = process.env.HOST || '127.0.0.1';
 
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
