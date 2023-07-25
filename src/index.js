@@ -25,13 +25,25 @@ const baseChatBotProps = {
     avatar: process.env.CHATBOT_AVATAR,
 };
 
+function isUp(req, res) {
+    const url = req.url;
+    if (url == '/alive') {
+        res.writeHead(200, { 'Content-Type': 'text/html' });
+        res.write('works like a charm! :)');
+        res.end();
+    }
+}
+
 const server =
     process.env.PRODUCTION == 'true'
-        ? https.createServer({
-              key: fs.readFileSync('cert/key.pem'),
-              cert: fs.readFileSync('cert/cert.pem'),
-          })
-        : http.createServer();
+        ? https.createServer(
+              {
+                  key: fs.readFileSync('cert/key.pem'),
+                  cert: fs.readFileSync('cert/cert.pem'),
+              },
+              isUp
+          )
+        : http.createServer(isUp);
 
 const io = new Server(server, options);
 
