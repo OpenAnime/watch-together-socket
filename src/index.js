@@ -341,10 +341,6 @@ io.on('connection', (socket) => {
                 cache.remove(ptr, `${user.room}_owner`);
             }
 
-            io.in(user.room).emit('notification', {
-                title: 'Someone just left',
-                description: `${user.username} just left the room`,
-            });
             io.in(user.room).emit('users', getUsers(user.room));
         }
     });
