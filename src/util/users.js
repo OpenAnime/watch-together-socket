@@ -9,7 +9,7 @@ export const addUser = async (id, token, room) => {
     return new Promise(async (resolve) => {
         try {
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            const { body } = await request('http://127.0.0.1:1902/api/user/' + decoded.id);
+            const { body } = await request(`${process.env.API_URL}/user/` + decoded.id);
             const json = await body.json();
 
             if (json.error)
