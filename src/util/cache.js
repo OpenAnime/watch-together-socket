@@ -43,8 +43,6 @@ function add(key, value, expr) {
         clearTimeout(item.sweeper);
     }
 
-    console.log(value);
-
     cache.set(key, {
         data: value,
         sweeper: expr
