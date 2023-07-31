@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 import { request } from 'undici';
-import { getMainCache } from '../index.js';
 import { get } from './cache.js';
 
 const users = [];
@@ -30,9 +29,9 @@ export const addUser = async (id, token, room) => {
                     error: 'User is already in the same room',
                 });
 
-            const getMutedParticipants = get(getMainCache(), `${room}_mutedUsers`)?.value ?? [];
+            const getMutedParticipants = get(`${room}_mutedUsers`) ?? [];
             const muted = getMutedParticipants.includes(json.id);
-            const getBannedUsers = get(getMainCache(), `${room}_bannedUsers`)?.value ?? [];
+            const getBannedUsers = get(`${room}_bannedUsers`) ?? [];
             const banned = getBannedUsers.find((x) => (x.userID = json.id));
 
             if (banned) return resolve({ error: 'You are banned from this room' });

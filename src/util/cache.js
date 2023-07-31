@@ -21,17 +21,15 @@ const times = {
     d: 86400000,
 };
 
-function new_cache() {
-    const ptr = {
-        items: [],
-    };
+/**
+ *
+ * @type {WeakMap<string, { data: any, sweeper?: NodeJS.Timeout }>}
+ */
+const cache = new WeakMap();
 
-    return ptr;
-}
-
-function add(ptr, key, value, expr) {
-    const idx = ptr.items.findIndex((i) => i.key === key);
+function add(key, value, expr) {
     const multiplier = expr ? times[expr.slice(-1)] : null;
+
     if (!multiplier && expr) {
         console.error(
             'Invalid time format. Please use m, w or d. (m = minutes, w = weeks, d = days)'
@@ -39,41 +37,28 @@ function add(ptr, key, value, expr) {
         return;
     }
 
-    if (idx > -1) {
-        ptr.items[idx] = {
-            key,
-            value,
-            expire: expr ? Date.now() + expr.substring(0, expr.length - 1) * multiplier : undefined,
-        };
-    } else {
-        ptr.items.push({
-            key,
-            value,
-            expire: expr ? Date.now() + expr.substring(0, expr.length - 1) * multiplier : undefined,
-        });
+    const item = cache.get(key);
+
+    if (item && item.sweeper) {
+        clearTimeout(item.sweeper);
     }
-}
 
-function remove(ptr, key) {
-    ptr.items = ptr.items.filter((i) => i.key !== key);
-}
-
-function get(ptr, key) {
-    return ptr.items.find((i) => i.key === key);
-}
-
-function delete_expired(ptr) {
-    ptr.items.forEach((item) => {
-        if (item.expire <= Date.now()) remove(ptr, item.key);
+    cache.set(key, {
+        data: value,
+        sweeper: expr
+            ? setTimeout(() => {
+                  cache.delete(key);
+              }, expr.substring(0, expr.length - 1) * multiplier)
+            : undefined,
     });
 }
 
-async function start_cache(ptr) {
-    setTimeout(() => {
-        delete_expired(ptr);
-
-        setTimeout(() => start_cache(ptr), 1000);
-    }, 1000);
+function remove(key) {
+    cache.delete(key);
 }
 
-export { new_cache, add, remove, get, delete_expired, start_cache };
+function get(key) {
+    return cache.get(key)?.data;
+}
+
+export { add, remove, get };

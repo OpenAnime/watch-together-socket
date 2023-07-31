@@ -8,9 +8,6 @@ import fs from 'fs';
 
 config();
 
-const ptr = cache.new_cache();
-cache.start_cache(ptr);
-
 const options = {
     cors: true,
     origins: process.env.CORS_ORIGINS,
@@ -86,19 +83,18 @@ io.on('connection', (socket) => {
             });
         }
 
-        const getPass = cache.get(ptr, `${roomName}_password`);
-        if (getPass?.value) {
-            if (getPass.value != roomPassword) {
+        const getPass = cache.get(`${roomName}_password`);
+        if (getPass) {
+            if (getPass != roomPassword) {
                 return callback({
                     error: 'Wrong password',
                 });
             }
         }
 
-        let getVal = cache.get(ptr, `${roomName}_animeMeta`);
+        const getVal = cache.get(`${roomName}_animeMeta`);
 
-        if (getVal && JSON.stringify(getVal.value) != JSON.stringify(animeMeta)) {
-            getVal = getVal.value;
+        if (getVal && JSON.stringify(getVal) != JSON.stringify(animeMeta)) {
             return callback({
                 error: 'Fansub, episode, season or slug mismatch',
                 redirect: `/anime/${getVal.slug}/${getVal.season}/${getVal.episode}?fansub=${getVal.fansub}`,
@@ -117,16 +113,16 @@ io.on('connection', (socket) => {
         if (!clients) {
             //make the first person in the room moderator
             console.log(animeMeta);
-            cache.add(ptr, `${user.room}_animeMeta`, animeMeta);
-            cache.add(ptr, `${roomName}_password`, roomPassword);
-            cache.add(ptr, `${user.room}_controlledByMods`, false); //everyone can control
+            cache.add(`${user.room}_animeMeta`, animeMeta);
+            cache.add(`${roomName}_password`, roomPassword);
+            cache.add(`${user.room}_controlledByMods`, false); //everyone can control
             user.moderator = true;
             user.owner = true;
-            cache.add(ptr, `${user.room}_owner`, user.userID);
+            cache.add(`${user.room}_owner`, user.userID);
         } else {
             //reassign owner role when owner rejoins
-            const getRoomOwner = cache.get(ptr, `${user.room}_owner`);
-            if (getRoomOwner?.value == user.userID) {
+            const getRoomOwner = cache.get(`${user.room}_owner`);
+            if (getRoomOwner == user.userID) {
                 user.moderator = true;
                 user.owner = true;
             }
@@ -140,9 +136,9 @@ io.on('connection', (socket) => {
         });
         io.in(roomName).emit('users', getUsers(roomName));
         io.in(roomName).emit('settings', {
-            controlledByMods: cache.get(ptr, `${user.room}_controlledByMods`)?.value ?? false,
+            controlledByMods: cache.get(`${user.room}_controlledByMods`) ?? false,
         });
-        const startFrom = cache.get(ptr, `${user.room}_latestTimestamp`)?.value ?? 0;
+        const startFrom = cache.get(`${user.room}_latestTimestamp`) ?? 0;
 
         callback({
             message: 'success',
@@ -171,7 +167,7 @@ io.on('connection', (socket) => {
                     target.moderator = true;
 
                     io.in(user.room).emit('users', getUsers(user.room));
-                    const last = cache.get(ptr, `${user.room}_bannedUsers`)?.value ?? [];
+                    const last = cache.get(`${user.room}_bannedUsers`) ?? [];
                     io.to(target.id).emit('bannedUsers', last);
 
                     io.in(user.room).emit('system', {
@@ -187,11 +183,11 @@ io.on('connection', (socket) => {
         const user = getUserBySocket(socket.id);
         if (user.owner) {
             if (typeof args?.controlledByMods == 'boolean') {
-                cache.add(ptr, `${user.room}_controlledByMods`, args.controlledByMods);
+                cache.add(`${user.room}_controlledByMods`, args.controlledByMods);
             }
 
             socket.in(user.room).emit('settings', {
-                controlledByMods: cache.get(ptr, `${user.room}_controlledByMods`)?.value ?? false,
+                controlledByMods: cache.get(`${user.room}_controlledByMods`) ?? false,
             });
         }
     });
@@ -208,10 +204,10 @@ io.on('connection', (socket) => {
         if (args?.operation == 'mute') {
             console.log(target);
             target.muted = true;
-            const getMutedParticipants = cache.get(ptr, `${user.room}_mutedUsers`)?.value ?? [];
+            const getMutedParticipants = cache.get(`${user.room}_mutedUsers`) ?? [];
             getMutedParticipants.push(args.userID);
-            cache.add(ptr, `${user.room}_mutedUsers`, getMutedParticipants);
-            cache.add(ptr, `mutedState_${args.userID}_${user.room}`, true);
+            cache.add(`${user.room}_mutedUsers`, getMutedParticipants);
+            cache.add(`mutedState_${args.userID}_${user.room}`, true);
 
             io.in(user.room).emit('system', {
                 content: `${user.username}, ${target.username} kullanıcısını susturdu`,
@@ -219,10 +215,10 @@ io.on('connection', (socket) => {
             });
         } else if (args?.operation == 'unmute') {
             target.muted = false;
-            let getMutedParticipants = cache.get(ptr, `${user.room}_mutedUsers`)?.value ?? [];
+            let getMutedParticipants = cache.get(`${user.room}_mutedUsers`) ?? [];
             getMutedParticipants = getMutedParticipants.filter((id) => id != args.userID);
             const key = getMutedParticipants.length == 0 ? 'remove' : 'add';
-            cache[key](ptr, `${user.room}_mutedUsers`, getMutedParticipants);
+            cache[key](`${user.room}_mutedUsers`, getMutedParticipants);
 
             io.in(user.room).emit('system', {
                 content: `${user.username}, ${target.username} kullanıcısının susturmasını kaldırdı`,
@@ -238,13 +234,13 @@ io.on('connection', (socket) => {
             });
         } else if (args?.operation == 'ban') {
             const getTargetSocket = io.sockets.sockets.get(target.id);
-            const getBannedUsers = cache.get(ptr, `${user.room}_bannedUsers`)?.value ?? [];
+            const getBannedUsers = cache.get(`${user.room}_bannedUsers`) ?? [];
             getBannedUsers.push({
                 userID: target.userID,
                 username: target.username,
                 avatar: target.avatar,
             });
-            cache.add(ptr, `${user.room}_bannedUsers`, getBannedUsers);
+            cache.add(`${user.room}_bannedUsers`, getBannedUsers);
             getTargetSocket.disconnect();
 
             const getUsersInRoom = getUsers(user.room, true);
@@ -259,13 +255,13 @@ io.on('connection', (socket) => {
                 ...baseChatBotProps,
             });
         } else if (args?.operation == 'unban') {
-            cache.remove(ptr, `bannedState_${args.userID}_${user.room}`);
+            cache.remove(`bannedState_${args.userID}_${user.room}`);
 
-            let getBannedUsers = cache.get(ptr, `${user.room}_bannedUsers`)?.value ?? [];
+            let getBannedUsers = cache.get(`${user.room}_bannedUsers`) ?? [];
             getBannedUsers = getBannedUsers.filter((x) => x.userID != args.userID);
             const key = getBannedUsers.length == 0 ? 'remove' : 'add';
-            cache[key](ptr, `${user.room}_bannedUsers`, getBannedUsers);
-            const last = cache.get(ptr, `${user.room}_bannedUsers`)?.value ?? [];
+            cache[key](`${user.room}_bannedUsers`, getBannedUsers);
+            const last = cache.get(`${user.room}_bannedUsers`) ?? [];
 
             const getUsersInRoom = getUsers(user.room, true);
             getUsersInRoom.forEach((user) => {
@@ -294,21 +290,21 @@ io.on('connection', (socket) => {
     socket.on('timestamp', (timestamp) => {
         const user = getUserBySocket(socket.id);
         if (isNaN(timestamp)) return;
-        const controlledByMods = cache.get(ptr, `${user.room}_controlledByMods`)?.value ?? false;
+        const controlledByMods = cache.get(`${user.room}_controlledByMods`) ?? false;
         if (controlledByMods && !user.moderator) return;
-        const checkAlreadyStored = cache.get(ptr, `${user.room}_latestTimestamp`);
+        const checkAlreadyStored = cache.get(`${user.room}_latestTimestamp`);
         if (checkAlreadyStored) {
-            if (checkAlreadyStored.value < timestamp) {
-                cache.add(ptr, `${user.room}_latestTimestamp`, timestamp);
+            if (checkAlreadyStored < timestamp) {
+                cache.add(`${user.room}_latestTimestamp`, timestamp);
             }
         } else {
-            cache.add(ptr, `${user.room}_latestTimestamp`, timestamp);
+            cache.add(`${user.room}_latestTimestamp`, timestamp);
         }
     });
 
     socket.on('playerState', (state) => {
         const user = getUserBySocket(socket.id);
-        const controlledByMods = cache.get(ptr, `${user.room}_controlledByMods`)?.value ?? false;
+        const controlledByMods = cache.get(`${user.room}_controlledByMods`) ?? false;
         if (controlledByMods && !user.moderator) return;
         if ('playing' in state) {
             console.log('içinde');
@@ -324,7 +320,7 @@ io.on('connection', (socket) => {
 
     socket.on('playerTimestamp', (timestamp) => {
         const user = getUserBySocket(socket.id);
-        const controlledByMods = cache.get(ptr, `${user.room}_controlledByMods`)?.value ?? false;
+        const controlledByMods = cache.get(`${user.room}_controlledByMods`) ?? false;
         if (controlledByMods && !user.moderator) return;
         if ('timestamp' in timestamp) {
             socket.broadcast.to(user.room).emit('playerTimestamp', {
@@ -344,20 +340,16 @@ io.on('connection', (socket) => {
             const clients = io.sockets.adapter.rooms.get(user.room);
             if (!clients) {
                 //if everybody left the room remove these caches
-                cache.remove(ptr, `${user.room}_latestTimestamp`);
-                cache.remove(ptr, `${user.room}_animeMeta`);
-                cache.remove(ptr, `${user.room}_password`);
-                cache.remove(ptr, `${user.room}_bannedUsers`);
-                cache.remove(ptr, `${user.room}_mutedUsers`);
-                cache.remove(ptr, `${user.room}_controlledByMods`);
-                cache.remove(ptr, `${user.room}_owner`);
+                cache.remove(`${user.room}_latestTimestamp`);
+                cache.remove(`${user.room}_animeMeta`);
+                cache.remove(`${user.room}_password`);
+                cache.remove(`${user.room}_bannedUsers`);
+                cache.remove(`${user.room}_mutedUsers`);
+                cache.remove(`${user.room}_controlledByMods`);
+                cache.remove(`${user.room}_owner`);
             }
 
             io.in(user.room).emit('users', getUsers(user.room));
         }
     });
 });
-
-export function getMainCache() {
-    return ptr;
-}
