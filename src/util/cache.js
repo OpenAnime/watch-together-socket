@@ -23,9 +23,9 @@ const times = {
 
 /**
  *
- * @type {WeakMap<string, { data: any, sweeper?: NodeJS.Timeout }>}
+ * @type {Map<string, { data: any, sweeper?: NodeJS.Timeout }>}
  */
-const cache = new WeakMap();
+const cache = new Map();
 
 function add(key, value, expr) {
     const multiplier = expr ? times[expr.slice(-1)] : null;
@@ -42,6 +42,8 @@ function add(key, value, expr) {
     if (item && item.sweeper) {
         clearTimeout(item.sweeper);
     }
+
+    console.log(value);
 
     cache.set(key, {
         data: value,
