@@ -269,6 +269,11 @@ io.on('connection', (socket) => {
                     io.to(user.id).emit('bannedUsers', last);
                 }
             });
+
+            io.in(user.room).emit('system', {
+                content: `${user.username}, ${target.username} kullanıcısının yasağını kaldırdı`,
+                ...baseChatBotProps,
+            });
         }
 
         io.in(user.room).emit('users', getUsers(user.room));
