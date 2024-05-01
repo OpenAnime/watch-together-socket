@@ -4,25 +4,38 @@
     "description": "",
     "main": "src/index.js",
     "scripts": {
-        "dev": "node .",
-        "format": "prettier --write .",
-        "lint": "eslint . --ext .js",
-        "lint:fix": "eslint . --ext .js --fix"
+        "start": "node scripts/start.js --no-warnings",
+        "dev": "tsup && pnpm start",
+        "dev:watch": "tsup --watch --onSuccess \"pnpm start\"",
+        "build": "tsup",
+        "format": "prettier --write . --ignore-path .gitignore",
+        "lint": "eslint . --ignore-path .gitignore",
+        "lint:fix": "eslint --fix . --ignore-path .gitignore"
     },
     "keywords": [],
     "author": "",
     "license": "ISC",
     "dependencies": {
-        "dotenv": "^16.0.3",
-        "jsonwebtoken": "^9.0.0",
-        "socket.io": "^4.6.1",
-        "undici": "^5.21.2"
+        "chalk": "^5.3.0",
+        "dotenv": "^16.4.5",
+        "ioredis": "^5.3.2",
+        "jsonwebtoken": "^9.0.2",
+        "rapidenv": "^1.1.6",
+        "socket.io": "^4.7.5",
+        "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.43.0",
+        "undici": "^5.28.3",
+        "zod": "^3.22.4"
     },
     "type": "module",
     "devDependencies": {
-        "eslint": "^8.43.0",
-        "eslint-config-prettier": "^8.8.0",
+        "@swc/core": "^1.4.8",
+        "@typescript-eslint/eslint-plugin": "^7.3.1",
+        "@typescript-eslint/parser": "^7.3.1",
+        "eslint": "^8.57.0",
+        "eslint-config-prettier": "^8.10.0",
         "eslint-plugin-prettier": "^4.2.1",
-        "prettier": "^2.8.8"
+        "eslint-plugin-simple-import-sort": "^12.0.0",
+        "prettier": "^2.8.8",
+        "tsup": "^8.0.2"
     }
 }
