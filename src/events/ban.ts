@@ -1,9 +1,10 @@
-import { delWithPattern, get, set, del } from '@utils/cache';
+import type { Server, Socket } from 'socket.io';
+
+import { get, set } from '@utils/cache';
+import canDoModerationOperationOnTarget from '@utils/canDoModerationOperationOnTarget';
 import sendSystemMessage from '@utils/systemMessage';
 
-import type { Socket, Server } from 'socket.io';
-import { Participant, CoreParticipant } from './login';
-import canDoModerationOperationOnTarget from '@utils/canDoModerationOperationOnTarget';
+import { CoreParticipant, Participant } from './login';
 
 export default class BanOrUnbanParticipant {
     async handle({ socket, io, data }: { socket: Socket; io: Server; data: any }) {

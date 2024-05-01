@@ -1,9 +1,11 @@
+import Redis from 'ioredis';
 import { Server } from 'socket.io';
 import { App } from 'uWebSockets.js';
-import { success, warn, info } from './utils/logger';
-import traverseEvents from './router';
-import Redis from 'ioredis';
+
 import { delWithPattern } from '@utils/cache';
+
+import traverseEvents from './router';
+import { info, success, warn } from './utils/logger';
 
 const app = App();
 const io = new Server();

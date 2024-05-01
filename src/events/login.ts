@@ -1,7 +1,8 @@
+import { z } from 'zod';
+
 import { io } from '@index';
 import { get, multipleSet, set } from '@utils/cache';
 import sendSystemMessage from '@utils/systemMessage';
-import { z } from 'zod';
 
 type Participant = {
     id: string;
@@ -57,7 +58,8 @@ export default class Login {
             return callback({ message: err });
         }
 
-        let { password, room, anime } = data;
+        let { password, room } = data;
+        const { anime } = data;
 
         const prefix = 'room:' + room;
 
@@ -170,4 +172,4 @@ export default class Login {
     }
 }
 
-export { Participant, CoreParticipant };
+export { CoreParticipant, Participant };

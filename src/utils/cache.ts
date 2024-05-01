@@ -100,4 +100,4 @@ async function keys(pattern: string) {
     return await redis.keys(pattern);
 }
 
-export { del, delWithPattern, get, multipleGet, keys, set, multipleSet };
+export { del, delWithPattern, get, keys, multipleGet, multipleSet, set };

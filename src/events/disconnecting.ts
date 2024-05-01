@@ -1,5 +1,6 @@
-import { delWithPattern, get, set, del } from '@utils/cache';
-import type { Socket, Server } from 'socket.io';
+import type { Server, Socket } from 'socket.io';
+
+import { del, delWithPattern, get, set } from '@utils/cache';
 
 export default class Disconnect {
     async handle({ socket, io }: { socket: Socket; io: Server }) {

@@ -1,5 +1,6 @@
+import type { Server, Socket } from 'socket.io';
+
 import { get } from '@utils/cache';
-import type { Socket, Server } from 'socket.io';
 
 export default class CreateMessage {
     async handle({ socket, io, data }: { socket: Socket; io: Server; data: any }) {
