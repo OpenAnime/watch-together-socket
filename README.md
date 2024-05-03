@@ -136,6 +136,7 @@ We're grateful to the inspiring projects and individuals who shaped our endeavor
   <tbody>
     <tr>
       <td align="center" valign="top" width="14.28%"><a href="https://spongebed.xyz"><img src="https://avatars.githubusercontent.com/u/56435044?v=4?s=100" width="100px;" alt="SpongeBed"/><br /><sub><b>SpongeBed</b></sub></a><br /><a href="#code-SpongeBed81" title="Code">💻</a> <a href="#content-SpongeBed81" title="Content">🖋</a> <a href="#ideas-SpongeBed81" title="Ideas, Planning, & Feedback">🤔</a> <a href="#projectManagement-SpongeBed81" title="Project Management">📆</a></td>
+      <td align="center" valign="top" width="14.28%"><a href="https://hanzy.dev"><img src="https://avatars.githubusercontent.com/u/77491112?v=4?s=100" width="100px;" alt="Emirhan"/><br /><sub><b>Emirhan</b></sub></a><br /><a href="#infra-hanzydev" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a></td>
     </tr>
   </tbody>
 </table>
