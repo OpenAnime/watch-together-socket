@@ -2,7 +2,7 @@
 
 ## Security
 
-OpenAnime takes the security of our software products and services seriously, including all of the open source code repositories managed through our GitHub organization.
+OpenAnime takes the security of our software products and services seriously, including all of the open source and source-available code repositories managed through our GitHub organization.
 
 ## Reporting Security Issues
 
