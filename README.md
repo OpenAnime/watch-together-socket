@@ -39,6 +39,7 @@
     <li><a href="#contributing">Contributing</a></li>
     <li><a href="#license">License</a></li>
     <li><a href="#acknowledgments">Acknowledgments</a></li>
+    <li><a href="#contributors">Contributors</a></li>
   </ol>
 
 <!-- ABOUT THE PROJECT -->
@@ -123,6 +124,22 @@ We're grateful to the inspiring projects and individuals who shaped our endeavor
 -   [@uNetworkingAB](https://github.com/uNetworkingAB)'s [uWebSockets.js](https://github.com/uNetworking/uWebSockets.js)
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
+
+<!-- ALL CONTRIBUTORS HERE -->
+
+## Contributors
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore-start -->
+<!-- markdownlint-disable -->
+
+<!-- markdownlint-restore -->
+<!-- prettier-ignore-end -->
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+<p align="right">(<a href="#readme-top">back to top</a>)</p>
+
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
