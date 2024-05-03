@@ -10,7 +10,6 @@ export default class CreateMessage {
             data.message.trim().length > 0 &&
             data.message.trim().length <= 250
         ) {
-            console.log(data.message);
             const rooms = Array.from(socket.rooms);
 
             const room = rooms[1];

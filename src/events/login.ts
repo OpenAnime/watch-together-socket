@@ -41,7 +41,6 @@ const validation = z.object({
 
 export default class Login {
     async handle({ socket, callback, data }) {
-        console.log('selamm');
         const token = data?.token || socket.handshake.headers.authorization;
 
         const val = validation.safeParse({
@@ -51,8 +50,6 @@ export default class Login {
 
         if ('error' in val) {
             let err = val.error.issues[0].message;
-
-            console.log(val.error.issues);
 
             if (err == 'Required') err = 'Invalid body';
             return callback({ message: err });

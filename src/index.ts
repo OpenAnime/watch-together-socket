@@ -39,8 +39,6 @@ const chatBotProps = {
 (async () => {
     const events = await traverseEvents();
 
-    console.log(events);
-
     io.attachApp(app, {
         cors: {
             origin: process.env.CORS_ORIGIN,
