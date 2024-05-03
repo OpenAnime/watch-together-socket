@@ -63,24 +63,21 @@ export default class Login {
         password = password.trim();
         room = room.trim();
 
-        const user = await fetch(`${process.env.API_URL}/user`, {
+        const user = (await fetch(`${process.env.API_URL}/user`, {
             headers: {
                 Authorization: token,
             },
-        });
+        })) as any;
 
         const json = await user.json();
-
         if (!json?.id) return callback({ error: 'Kullanıcı verisi alınamadı' });
 
         const roomParticipants = await get(`${prefix}:users`);
-
         if (roomParticipants && roomParticipants.find((user) => user.id == json.id)) {
             return callback({ error: 'Zaten bu odadasın' });
         }
 
         const getPass = await get(`${prefix}:password`);
-
         if (getPass && getPass != password) {
             return callback({ error: 'Yanlış şifre' });
         }
@@ -89,7 +86,6 @@ export default class Login {
             []) as CoreParticipant[];
 
         const banned = bannedParticipants.find((x) => x.id == json.id);
-
         if (banned) {
             return callback({ error: 'Bu odadan yasaklandınız' });
         }

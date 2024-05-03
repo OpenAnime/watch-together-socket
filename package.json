@@ -3,7 +3,7 @@
     "main": "dist/index.js",
     "type": "module",
     "scripts": {
-        "start": "node scripts/start.js --no-warnings",
+        "start": "node . --no-warnings",
         "dev": "tsup && pnpm start",
         "dev:watch": "tsup --watch --onSuccess \"pnpm start\"",
         "build": "tsup",
