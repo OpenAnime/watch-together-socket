@@ -140,7 +140,6 @@ We're grateful to the inspiring projects and individuals who shaped our endeavor
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
-
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
 
