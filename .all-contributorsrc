@@ -19,6 +19,15 @@
         "ideas",
         "projectManagement"
       ]
+    },
+    {
+      "login": "hanzydev",
+      "name": "Emirhan",
+      "avatar_url": "https://avatars.githubusercontent.com/u/77491112?v=4",
+      "profile": "https://hanzy.dev",
+      "contributions": [
+        "infra"
+      ]
     }
   ]
 }
