@@ -9,7 +9,7 @@
         "experimentalDecorators": true,
         "importHelpers": true,
         "ignoreDeprecations": "5.0",
-        "lib": ["ESNext", "DOM"],
+        "lib": ["ESNext"],
         "module": "ESNext",
         "moduleResolution": "Node",
         "newLine": "lf",
@@ -30,8 +30,8 @@
         "skipLibCheck": true,
         "noEmit": true,
         "paths": {
+            "@events/*": ["./src/events/*.ts"],
             "@utils/*": ["./src/utils/*.ts"],
-            "@routes/*": ["./src/events/*.ts"],
             "@index": ["./src/index.ts"]
         }
     },

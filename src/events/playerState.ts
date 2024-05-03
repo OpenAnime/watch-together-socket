@@ -7,21 +7,17 @@ import { Participant } from './login';
 export default class MuteOrUnmuteParticipant {
     async handle({ socket, data }: { socket: Socket; data: any }) {
         const playing = data?.playing;
-
-        if (!(playing == true || playing == false)) return;
+        if (typeof data?.playing !== 'boolean') return;
 
         const rooms = Array.from(socket.rooms);
-
         const room = rooms[1];
 
         if (!room) return;
 
         const socketId = socket.id;
-
         let pass = false;
 
         const modRequired = (await get(`room:${room}:controlledByMods`)) ?? false;
-
         if (modRequired) {
             const socketRoomParticipants = (await get(`room:${room}:users`)) as Participant[];
 

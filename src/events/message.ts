@@ -11,13 +11,11 @@ export default class CreateMessage {
             data.message.trim().length <= 250
         ) {
             const rooms = Array.from(socket.rooms);
-
             const room = rooms[1];
 
             if (!room) return;
 
             const socketRoomParticipants = await get(`room:${room}:users`);
-
             const author = socketRoomParticipants.find((user) => user.sid == socket.id);
 
             if (!author) return;
