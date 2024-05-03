@@ -56,6 +56,9 @@ In March 2022, we founded OpenAnime with the mission of enhancing your anime vie
 
 [![Socket.io][Socket.io]][Socket.io-url]
 [![TypeScript][TypeScript]][TypeScript-url]
+[![Prettier][Prettier]][Prettier-url]
+[![ESLint][ESLint]][ESLint-url]
+[![Vite][Vite]][Vite-url]
 
 <p align="right">(<a href="#readme-top">back to top</a>)</p>
 
@@ -155,4 +158,10 @@ We're grateful to the inspiring projects and individuals who shaped our endeavor
 [TypeScript-url]: https://www.typescriptlang.org/
 [Socket.io]: https://img.shields.io/static/v1?style=for-the-badge&message=Socket.io&color=010101&logo=Socket.io&logoColor=FFFFFF&label=
 [Socket.io-url]: https://socket.io
+[Vite]: https://img.shields.io/static/v1?style=for-the-badge&message=Vite&color=646CFF&logo=Vite&logoColor=FFFFFF&label=
+[Vite-url]: https://vitejs.dev/
+[Prettier]: https://img.shields.io/static/v1?style=for-the-badge&message=Prettier&color=222222&logo=Prettier&logoColor=F7B93E&label=
+[Prettier-url]: https://prettier.io/
+[ESLint]: https://img.shields.io/static/v1?style=for-the-badge&message=ESLint&color=4B32C3&logo=ESLint&logoColor=FFFFFF&label=
+[ESLint-url]: https://eslint.org/
 [OpenAnime-ss]: /website.png
