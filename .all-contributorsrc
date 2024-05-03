@@ -1,4 +1,24 @@
 {
   "projectName": "watch-together-socket",
-  "projectOwner": "OpenAnime"
+  "projectOwner": "OpenAnime",
+  "files": [
+    "README.md"
+  ],
+  "commitType": "docs",
+  "commitConvention": "angular",
+  "contributorsPerLine": 7,
+  "contributors": [
+    {
+      "login": "SpongeBed81",
+      "name": "SpongeBed",
+      "avatar_url": "https://avatars.githubusercontent.com/u/56435044?v=4",
+      "profile": "https://spongebed.xyz",
+      "contributions": [
+        "code",
+        "content",
+        "ideas",
+        "projectManagement"
+      ]
+    }
+  ]
 }
