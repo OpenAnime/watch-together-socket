@@ -2,6 +2,10 @@ import Redis from 'ioredis';
 import { Server } from 'socket.io';
 import { App } from 'uWebSockets.js';
 
+import RapidEnv from 'rapidenv';
+
+RapidEnv().load();
+
 import { delWithPattern } from '@utils/cache';
 
 import traverseEvents from './router';
