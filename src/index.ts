@@ -1,8 +1,7 @@
 import Redis from 'ioredis';
+import RapidEnv from 'rapidenv';
 import { Server } from 'socket.io';
 import { App } from 'uWebSockets.js';
-
-import RapidEnv from 'rapidenv';
 
 RapidEnv().load();
 
