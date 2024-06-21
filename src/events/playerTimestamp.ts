@@ -1,6 +1,6 @@
 import type { Socket } from 'socket.io';
 
-import { get } from '@utils/cache';
+import { get, set } from '@utils/cache';
 
 import { Participant } from './login';
 
@@ -31,6 +31,7 @@ export default class MuteOrUnmuteParticipant {
 
         if (pass) {
             socket.broadcast.to(room).emit('playerTimestamp', { timestamp: videoTimestamp });
+            await set(`room:${room}:timestamp`, videoTimestamp);
         }
     }
 }

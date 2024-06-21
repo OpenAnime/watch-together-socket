@@ -1,3 +1,4 @@
+import { Socket } from 'socket.io';
 import { z } from 'zod';
 
 import { io } from '@index';
@@ -40,7 +41,7 @@ const validation = z.object({
 });
 
 export default class Login {
-    async handle({ socket, callback, data }) {
+    async handle({ socket, callback, data }: { socket: Socket; callback: any; data: any }) {
         const token = data?.token || socket.handshake.headers.authorization;
 
         const val = validation.safeParse({

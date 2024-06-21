@@ -42,6 +42,10 @@ const chatBotProps = {
 (async () => {
     const events = await traverseEvents();
 
+    app.get('/', (res, _) => {
+        res.writeStatus('200 OK').end('obezanime watch together socket 👌');
+    });
+
     io.attachApp(app, {
         cors: {
             origin: process.env.CORS_ORIGIN,
