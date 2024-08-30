@@ -10,6 +10,10 @@ import { delWithPattern } from '@utils/cache';
 import traverseEvents from './router';
 import { info, success, warn } from './utils/logger';
 
+process.on('uncaughtException', function (err) {
+    console.error(err);
+});
+
 const app = App();
 const io = new Server();
 
