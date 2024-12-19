@@ -3,7 +3,7 @@
 <br />
 <div align="center">
   <a href="https://github.com/OpenAnime/site">
-    <img src="/favicon512.png" alt="OpenAnime Logo" width="256" height="256">
+    <img src="/favicon512.png" alt="OpenAnime Logo" width="128" height="128">
   </a>
 
   <h3 align="center">OpenAnime Watch Together Server</h3>
