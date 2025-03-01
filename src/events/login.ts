@@ -67,6 +67,7 @@ export default class Login {
         const user = (await fetch(`${process.env.API_URL}/user`, {
             headers: {
                 Authorization: token,
+                'OpenAnime-Bypass-Auth-Please': '3169',
             },
         })) as any;
 
