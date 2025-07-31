@@ -53,7 +53,7 @@ export default class Login {
             let err = val.error.issues[0].message;
 
             if (err == 'Required') err = 'Invalid body';
-            return callback({ message: err });
+            return callback({ error: err });
         }
 
         let { password, room } = data;
