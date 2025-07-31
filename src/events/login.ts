@@ -67,7 +67,7 @@ export default class Login {
         const user = (await fetch(`${process.env.API_URL}/user`, {
             headers: {
                 Authorization: token,
-                'Client-Protol-Model': process.env.CLIENT_PROTOL_MODEL_VALUE,
+                'Client-Protocol-Model': process.env.CLIENT_PROTOCOL_MODEL_VALUE,
             },
         })) as any;
 
