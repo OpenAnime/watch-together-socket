@@ -31,7 +31,7 @@
         "ioredis": "^5.4.1",
         "rapidenv": "^1.1.6",
         "socket.io": "^4.7.5",
-        "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.43.0",
+        "uWebSockets.js": "github:uNetworking/uWebSockets.js#v20.52.0",
         "zod": "^3.23.6"
     },
     "packageManager": "pnpm@9.4.0"

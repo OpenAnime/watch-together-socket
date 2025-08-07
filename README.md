@@ -71,7 +71,7 @@ To get a local copy up and running follow these simple example steps.
 
 ### Prerequisites
 
--   Node.js LTS versions 16, 18 and 20 (22 support not yet implemented)
+-   Node.js LTS versions 20 and beyond.
 
 ### Installation and local deployment
 
