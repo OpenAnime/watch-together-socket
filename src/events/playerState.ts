@@ -4,7 +4,7 @@ import { get } from '@utils/cache';
 
 import { Participant } from './login';
 
-export default class MuteOrUnmuteParticipant {
+export default class UpdatePlayerState {
     async handle({ socket, data }: { socket: Socket; data: any }) {
         const playing = data?.playing;
         if (typeof data?.playing !== 'boolean') return;

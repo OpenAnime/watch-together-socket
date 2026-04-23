@@ -4,7 +4,7 @@ import { get, set } from '@utils/cache';
 
 import { Participant } from './login';
 
-export default class MuteOrUnmuteParticipant {
+export default class UpdatePlayerTimestamp {
     async handle({ socket, data }: { socket: Socket; data: any }) {
         const videoTimestamp = data?.timestamp;
         if (isNaN(videoTimestamp)) return;
