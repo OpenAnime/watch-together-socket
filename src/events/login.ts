@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { io } from '@index';
 import { get, multipleSet, set } from '@utils/cache';
 import sendSystemMessage from '@utils/systemMessage';
+import useSocket from '@utils/useSocket';
 
 type Participant = {
     id: string;
@@ -155,8 +156,11 @@ export default class Login {
         sendSystemMessage(room, `${json.username} odaya katıldı 👋`);
 
         setTimeout(async () => {
-            io.in(room).emit('participants', {
-                participants: await get(`${prefix}:users`),
+            const hook = useSocket(socket);
+            if (hook?.error) return;
+
+            hook.broadcastToEveryone('participants', {
+                participants: await hook.getParticipants(),
             });
         }, 1000);
 

@@ -1,27 +1,22 @@
-import type { Server, Socket } from 'socket.io';
+import type { Socket } from 'socket.io';
 
-import { get, set } from '@utils/cache';
-
-import { Participant } from './login';
+import useSocket from '@utils/useSocket';
 
 export default class ChangeModeratorControl {
-    async handle({ socket, io, data }: { socket: Socket; io: Server; data: any }) {
+    async handle({ socket, data }: { socket: Socket; data: any }) {
         const controlledByMods = data?.controlledByMods;
         if (typeof controlledByMods !== 'boolean') return;
 
-        const rooms = Array.from(socket.rooms);
-        const room = rooms[1];
+        const hook = useSocket(socket);
 
-        if (!room) return;
+        if (hook?.error) return;
 
-        const socketId = socket.id;
-        const socketRoomParticipants = (await get(`room:${room}:users`)) as Participant[];
-        const user = socketRoomParticipants.find((user) => user.sid == socketId);
+        const isOwner = await hook.isOwner();
 
-        if (user.owner) {
-            await set(`room:${room}:controlledByMods`, controlledByMods);
+        if (isOwner) {
+            await hook.setRoomKey('controlledByMods', controlledByMods);
 
-            io.in(room).emit('modControl', {
+            hook.broadcastToEveryone('modControl', {
                 controlledByMods,
             });
         }

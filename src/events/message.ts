@@ -1,29 +1,29 @@
-import type { Server, Socket } from 'socket.io';
+import type { Socket } from 'socket.io';
 
-import { get } from '@utils/cache';
+import useSocket from '@utils/useSocket';
 
 export default class CreateMessage {
-    async handle({ socket, io, data }: { socket: Socket; io: Server; data: any }) {
+    async handle({ socket, data }: { socket: Socket; data: any }) {
         if (
             'message' in data &&
             typeof data.message == 'string' &&
             data.message.trim().length > 0 &&
             data.message.trim().length <= 250
         ) {
-            const rooms = Array.from(socket.rooms);
-            const room = rooms[1];
+            const hook = useSocket(socket);
 
-            if (!room) return;
+            if (hook?.error) return;
 
-            const socketRoomParticipants = await get(`room:${room}:users`);
-            const author = socketRoomParticipants.find((user) => user.sid == socket.id);
+            const currentUser = await hook.getCurrentUser();
+            if (!currentUser) return;
 
-            if (!author) return;
+            const muted = await hook.isMuted();
+            if (muted) return;
 
-            delete author.sid;
+            delete currentUser.sid;
 
-            io.in(room).emit('message', {
-                author,
+            hook.broadcastToEveryone('message', {
+                author: currentUser,
                 content: data.message.trim(),
             });
         }

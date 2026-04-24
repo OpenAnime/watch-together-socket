@@ -1,37 +1,30 @@
 import type { Socket } from 'socket.io';
 
-import { get, set } from '@utils/cache';
-
-import { Participant } from './login';
+import useSocket from '@utils/useSocket';
 
 export default class UpdatePlayerTimestamp {
     async handle({ socket, data }: { socket: Socket; data: any }) {
         const videoTimestamp = data?.timestamp;
         if (isNaN(videoTimestamp)) return;
 
-        const rooms = Array.from(socket.rooms);
-        const room = rooms[1];
+        const hook = useSocket(socket);
 
-        if (!room) return;
+        if (hook?.error) return;
 
-        const socketId = socket.id;
         let pass = false;
 
-        const modRequired = (await get(`room:${room}:controlledByMods`)) ?? false;
-        if (modRequired) {
-            const socketRoomParticipants = (await get(`room:${room}:users`)) as Participant[];
+        const controlledByMods = await hook.roomControlledByMods();
 
-            if (socketRoomParticipants) {
-                const mod = socketRoomParticipants.find((user) => user.sid == socketId);
-                if (mod?.moderator) pass = true;
-            }
+        if (controlledByMods) {
+            const isMod = await hook.isModerator();
+            pass = isMod;
         } else {
             pass = true;
         }
 
         if (pass) {
-            socket.broadcast.to(room).emit('playerTimestamp', { timestamp: videoTimestamp });
-            await set(`room:${room}:timestamp`, videoTimestamp);
+            hook.broadcastToEveryoneExceptAuthor('playerTimestamp', { timestamp: videoTimestamp });
+            hook.setRoomKey('timestamp', videoTimestamp);
         }
     }
 }

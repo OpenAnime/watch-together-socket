@@ -1,31 +1,30 @@
 import type { Server, Socket } from 'socket.io';
 
-import { del, delWithPattern, get, set } from '@utils/cache';
+import { del, delWithPattern } from '@utils/cache';
+import useSocket from '@utils/useSocket';
 
 export default class Disconnect {
     async handle({ socket, io }: { socket: Socket; io: Server }) {
-        const rooms = Array.from(socket.rooms);
-        const room = rooms[1];
+        const hook = useSocket(socket);
+        if (hook?.error) return;
 
-        if (!room) return;
-
-        const socketId = socket.id;
-        const socketRoomParticipants = await get(`room:${room}:users`);
+        const room = hook.getRoomPtr();
+        const socketRoomParticipants = await hook.getParticipants();
 
         if (socketRoomParticipants) {
-            const newParticipants = socketRoomParticipants.filter((user) => user.sid != socketId);
+            const newParticipants = socketRoomParticipants.filter((user) => user.sid != socket.id);
 
-            await set(`room:${room}:users`, newParticipants);
+            await hook.setRoomKey('users', newParticipants);
 
-            io.in(room).emit('participants', {
+            hook.broadcastToEveryone('participants', {
                 participants: newParticipants,
             });
         }
 
         const remainingParticipants = io.sockets.adapter.rooms.get(room);
-        if (!remainingParticipants) {
+        if (!remainingParticipants || remainingParticipants.size <= 1) {
             await delWithPattern(`room:${room}:*`);
-            await del(`sid:${socketId}`);
+            await del(`sid:${socket.id}`);
         }
     }
 }

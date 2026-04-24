@@ -1,74 +1,68 @@
-import type { Server, Socket } from 'socket.io';
+import type { Socket } from 'socket.io';
 
-import { get, set } from '@utils/cache';
 import sendSystemMessage from '@utils/systemMessage';
+import useSocket from '@utils/useSocket';
 
 import { Participant } from './login';
 
 export default class MakeModeratorOrTakeModerator {
-    async handle({ socket, io, data }: { socket: Socket; io: Server; data: any }) {
+    async handle({ socket, data }: { socket: Socket; data: any }) {
         const targetUserId = data?.target;
         if (!targetUserId) return;
 
-        const rooms = Array.from(socket.rooms);
-        const room = rooms[1];
+        const hook = useSocket(socket);
+        if (hook?.error) return;
 
-        if (!room) return;
+        const currentUser = await hook.getCurrentUser();
+        if (!currentUser.owner) return;
 
-        const socketId = socket.id;
-        const socketRoomParticipants = (await get(`room:${room}:users`)) as Participant[];
+        const targetUser = await hook.getUserFromId(targetUserId);
+        if (!targetUser) return;
 
-        if (socketRoomParticipants) {
-            const requestedBy = socketRoomParticipants.find((user) => user.sid == socketId);
-            const targetUser = socketRoomParticipants.find((user) => user.id == targetUserId);
+        const participants = await hook.getParticipants();
 
-            if (requestedBy.owner) {
-                const isTargetAlreadyMod = socketRoomParticipants.find(
-                    (user) => user.id == targetUserId,
-                )?.moderator;
+        let newParticipants: Participant[] = [];
 
-                let newParticipants = [];
+        if (targetUser.moderator) {
+            // take mod
 
-                if (isTargetAlreadyMod) {
-                    //take mod
-                    newParticipants = socketRoomParticipants.map((participant) => {
-                        if (participant.id == targetUserId) {
-                            return {
-                                ...participant,
-                                moderator: false,
-                            };
-                        }
-                        return participant;
-                    });
-
-                    sendSystemMessage(
-                        room,
-                        `${requestedBy.username}, ${targetUser.username} kullanıcısının moderatör yetkisini aldı.`,
-                    );
-                } else {
-                    //make mod
-                    newParticipants = socketRoomParticipants.map((participant) => {
-                        if (participant.id == targetUserId) {
-                            return {
-                                ...participant,
-                                moderator: true,
-                            };
-                        }
-                        return participant;
-                    });
-
-                    sendSystemMessage(
-                        room,
-                        `${requestedBy.username}, ${targetUser.username} kullanıcısını moderatör olarak atadı.`,
-                    );
+            newParticipants = participants.map((participant) => {
+                if (participant.id == targetUserId) {
+                    return {
+                        ...participant,
+                        moderator: false,
+                    };
                 }
+                return participant;
+            });
 
-                io.in(room).emit('participants', {
-                    participants: newParticipants,
-                });
+            sendSystemMessage(
+                hook.getRoomPtr(),
+                `${currentUser.username}, ${targetUser.username} kullanıcısının moderatör yetkisini aldı.`,
+            );
+        } else {
+            // make mod
 
-                await set(`room:${room}:users`, newParticipants);
-            }
+            newParticipants = participants.map((participant) => {
+                if (participant.id == targetUserId) {
+                    return {
+                        ...participant,
+                        moderator: true,
+                    };
+                }
+                return participant;
+            });
+
+            sendSystemMessage(
+                hook.getRoomPtr(),
+                `${currentUser.username}, ${targetUser.username} kullanıcısını moderatör olarak atadı.`,
+            );
         }
+
+        hook.broadcastToEveryone('participants', {
+            participants: newParticipants,
+        });
+
+        await hook.setRoomKey('users', newParticipants);
     }
 }
