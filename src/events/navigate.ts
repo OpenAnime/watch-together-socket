@@ -6,7 +6,7 @@ import useSocket from '@utils/useSocket';
 const validate = z
     .object({
         anime: z.string().min(1).max(500),
-        fansub: z.string().min(1).max(500),
+        fansub: z.string().min(1).max(500).optional(),
         season: z.number().int(),
         episode: z.number().int(),
     })
