@@ -17,6 +17,28 @@ type Participant = {
 
 type CoreParticipant = Omit<Participant, 'sid' | 'owner' | 'moderator'>;
 
+type SocketSession = {
+    room: string;
+    id: string;
+    participant?: Participant;
+};
+
+async function getParticipantsFromSocketRoom(room: string) {
+    const roomSockets = io.sockets.adapter.rooms.get(room);
+    if (!roomSockets) return [];
+
+    const participants = await Promise.all(
+        [...roomSockets].map(async (sid) => {
+            const session = (await get(`sid:${sid}`)) as SocketSession | null;
+
+            if (session?.room != room) return null;
+            return session.participant ?? null;
+        }),
+    );
+
+    return participants.filter((participant): participant is Participant => !!participant);
+}
+
 const validation = z.object({
     token: z.string().max(1000),
     room: z
@@ -60,10 +82,10 @@ export default class Login {
         let { password, room } = data;
         const { anime } = data;
 
-        const prefix = 'room:' + room;
-
         password = password.trim();
         room = room.trim();
+
+        const prefix = 'room:' + room;
 
         const user = (await fetch(`${process.env.API_URL}/user`, {
             headers: {
@@ -75,7 +97,19 @@ export default class Login {
         const json = await user.json();
         if (!json?.id) return callback({ error: 'Kullanıcı verisi alınamadı' });
 
-        const roomParticipants = await get(`${prefix}:users`);
+        let roomParticipants = ((await get(`${prefix}:users`)) ?? []) as Participant[];
+        const participantsDefinedBySocketIO = io.sockets.adapter.rooms.get(room);
+
+        if (participantsDefinedBySocketIO) {
+            roomParticipants = roomParticipants.filter((participant) =>
+                participantsDefinedBySocketIO.has(participant.sid),
+            );
+
+            if (roomParticipants.length == 0) {
+                roomParticipants = await getParticipantsFromSocketRoom(room);
+            }
+        }
+
         if (roomParticipants && roomParticipants.find((user) => user.id == json.id)) {
             return callback({ error: 'Zaten bu odadasın' });
         }
@@ -107,21 +141,21 @@ export default class Login {
             });
         }
 
-        const participantsDefinedBySocketIO = io.sockets.adapter.rooms.get(room);
+        let currentParticipant: Participant;
 
         // If there is no clients inside the room, we should create a new room and make the user the owner of the room
         if (!participantsDefinedBySocketIO) {
+            currentParticipant = {
+                id: json.id,
+                username: json.username,
+                avatar: json.avatar,
+                owner: true,
+                moderator: true,
+                sid: socket.id,
+            };
+
             await multipleSet({
-                [`${prefix}:users`]: [
-                    {
-                        id: json.id,
-                        username: json.username,
-                        avatar: json.avatar,
-                        owner: true,
-                        moderator: true,
-                        sid: socket.id,
-                    },
-                ],
+                [`${prefix}:users`]: [currentParticipant],
                 [`${prefix}:timestamp`]: 0,
                 [`${prefix}:anime`]: anime,
                 [`${prefix}:owner`]: json.id,
@@ -133,22 +167,28 @@ export default class Login {
         } else {
             const roomOwner = await get(`${prefix}:owner`);
 
-            await set(`${prefix}:users`, [
-                ...roomParticipants,
-                {
-                    id: json.id,
-                    username: json.username,
-                    avatar: json.avatar,
-                    owner: roomOwner == json.id,
-                    moderator: roomOwner == json.id,
-                    sid: socket.id,
-                },
-            ]);
+            if (roomParticipants.length == 0) {
+                return callback({
+                    error: 'Katılımcı listesi alınamadı, lütfen tekrar deneyin',
+                });
+            }
+
+            currentParticipant = {
+                id: json.id,
+                username: json.username,
+                avatar: json.avatar,
+                owner: roomOwner == json.id,
+                moderator: roomOwner == json.id,
+                sid: socket.id,
+            };
+
+            await set(`${prefix}:users`, [...roomParticipants, currentParticipant]);
         }
 
         await set(`sid:${socket.id}`, {
             room,
             id: json.id,
+            participant: currentParticipant,
         });
 
         socket.join(room);
