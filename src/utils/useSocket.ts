@@ -110,6 +110,9 @@ export default function useSocket(socket: Socket) {
             const modRequired = (await get(`${prefix}:controlledByMods`)) ?? false;
             return modRequired;
         },
+        getRoomKey: async (key: string) => {
+            return get(`${prefix}:${key}`);
+        },
         broadcastToEveryoneExceptAuthor: (event: string, data: any) => {
             socket.broadcast.to(room).emit(event, data);
         },

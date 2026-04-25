@@ -95,6 +95,7 @@ export default class Login {
 
         const getRoomAnimeInformation = await get(`${prefix}:anime`);
         const mutedParticipants = (await get(`${prefix}:mutedParticipants`)) ?? [];
+        const controlledByMods = (await get(`${prefix}:controlledByMods`)) ?? false;
 
         if (
             getRoomAnimeInformation &&
@@ -166,7 +167,13 @@ export default class Login {
 
         return callback({
             message: 'OK',
-            details: { bannedParticipants, mutedParticipants, timestamp: lastTimestamp, room },
+            details: {
+                bannedParticipants,
+                mutedParticipants,
+                timestamp: lastTimestamp,
+                room,
+                controlledByMods,
+            },
         });
     }
 }
