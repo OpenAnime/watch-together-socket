@@ -61,6 +61,7 @@ const validation = z.object({
         season: z.number().int(),
         episode: z.number().int(),
     }),
+    timestamp: z.number().nonnegative().optional(),
 });
 
 export default class Login {
@@ -80,7 +81,7 @@ export default class Login {
         }
 
         let { password, room } = data;
-        const { anime } = data;
+        const { anime, timestamp } = data;
 
         password = password.trim();
         room = room.trim();
@@ -156,7 +157,7 @@ export default class Login {
 
             await multipleSet({
                 [`${prefix}:users`]: [currentParticipant],
-                [`${prefix}:timestamp`]: 0,
+                [`${prefix}:timestamp`]: timestamp ?? 0,
                 [`${prefix}:anime`]: anime,
                 [`${prefix}:owner`]: json.id,
                 [`${prefix}:password`]: password,
@@ -193,6 +194,10 @@ export default class Login {
 
         socket.join(room);
 
+        /* reason why we fetch it from redis again is because since this route handles both
+        login and room creation logic and if timestamp is supplied and there is no other participants
+        than the current user the current user would be the owner of the room and only then we would set
+        the timestamp in redis */
         const lastTimestamp = (await get(`${prefix}:timestamp`)) ?? 0;
         sendSystemMessage(room, `${json.username} odaya katıldı 👋`);
 
