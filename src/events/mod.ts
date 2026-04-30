@@ -3,7 +3,7 @@ import type { Socket } from 'socket.io';
 import sendSystemMessage from '@utils/systemMessage';
 import useSocket from '@utils/useSocket';
 
-import { Participant } from './login';
+import { Participant } from './create';
 
 export default class MakeModeratorOrTakeModerator {
     async handle({ socket, data }: { socket: Socket; data: any }) {

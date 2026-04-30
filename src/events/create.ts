@@ -1,30 +1,60 @@
+import crypto from 'node:crypto';
+
 import { Socket } from 'socket.io';
 import { z } from 'zod';
 
-import { io } from '@index';
-import { get, set } from '@utils/cache';
+import { chatBotProps, io } from '@index';
+import { get, multipleSet, set } from '@utils/cache';
 import sendSystemMessage from '@utils/systemMessage';
+import { addTurkishPossessiveSuffix } from '@utils/turkishPossessiveSuffix';
 import useSocket from '@utils/useSocket';
 
-import { type CoreParticipant, getParticipantsFromSocketRoom, type Participant } from './create';
+export type Participant = {
+    id: string;
+    username: string;
+    avatar: string;
+    avatarDecoration: number;
+    owner: boolean;
+    moderator: boolean;
+    sid: string;
+};
+
+export type CoreParticipant = Omit<Participant, 'sid' | 'owner' | 'moderator'>;
+
+export type SocketSession = {
+    room: string;
+    id: string;
+    participant?: Participant;
+};
+
+export async function getParticipantsFromSocketRoom(room: string) {
+    const roomSockets = io.sockets.adapter.rooms.get(room);
+    if (!roomSockets) return [];
+
+    const participants = await Promise.all(
+        [...roomSockets].map(async (sid) => {
+            const session = (await get(`sid:${sid}`)) as SocketSession | null;
+
+            if (session?.room != room) return null;
+            return session.participant ?? null;
+        }),
+    );
+
+    return participants.filter((participant): participant is Participant => !!participant);
+}
 
 const validation = z.object({
     token: z.string().max(1000),
-    roomId: z.string().trim().max(32), // starts with the "room:" prefix
-    password: z.string().trim().max(32).optional(),
     anime: z.object({
         fansub: z.string().min(1).max(500),
         slug: z.string().min(1).max(500),
         season: z.number().int(),
         episode: z.number().int(),
     }),
+    timestamp: z.number().nonnegative().optional(),
 });
 
-function isEqual(a, b) {
-    return JSON.stringify(a, Object.keys(a).sort()) === JSON.stringify(b, Object.keys(b).sort());
-}
-
-export default class LoginIntoRoom {
+export default class CreateRoom {
     async handle({ socket, callback, data }: { socket: Socket; callback: any; data: any }) {
         const token = data?.token || socket.handshake.headers.authorization;
 
@@ -40,11 +70,7 @@ export default class LoginIntoRoom {
             return callback({ error: err });
         }
 
-        const { roomId, password, anime } = val.data;
-
-        if (!roomId.startsWith('room:')) {
-            return callback({ error: 'Geçersiz oda kodu' });
-        }
+        const { anime, timestamp } = data;
 
         const user = (await fetch(`${process.env.API_URL}/user`, {
             headers: {
@@ -53,23 +79,11 @@ export default class LoginIntoRoom {
             },
         })) as any;
 
+        // allocate 4 bytes. in hex, a byte is represented by 2 chars so its n * 2 - so 8 chars.
+        const roomId = 'room:' + crypto.randomBytes(4).toString('hex');
+
         const json = await user.json();
         if (!json?.id) return callback({ error: 'Kullanıcı verisi alınamadı' });
-
-        const getRoomAnimeInformation = await get(`${roomId}:anime`);
-
-        if (!getRoomAnimeInformation) {
-            return callback({
-                error: 'Böyle bir oda yok',
-            });
-        }
-
-        if (getRoomAnimeInformation && !isEqual(getRoomAnimeInformation, anime)) {
-            return callback({
-                error: 'content_differ',
-                anime: getRoomAnimeInformation,
-            });
-        }
 
         let roomParticipants = ((await get(`${roomId}:users`)) ?? []) as Participant[];
         const participantsDefinedBySocketIO = io.sockets.adapter.rooms.get(roomId);
@@ -88,51 +102,35 @@ export default class LoginIntoRoom {
             return callback({ error: 'Zaten bu odadasın' });
         }
 
-        const getPass = await get(`${roomId}:password`);
-        if (getPass && getPass != password) {
-            return callback({ error: 'wrong_password' });
-        }
-
-        const bannedParticipants = ((await get(`${roomId}:bannedParticipants`)) ??
-            []) as CoreParticipant[];
-
-        const banned = bannedParticipants.find((x) => x.id == json.id);
-        if (banned) {
-            return callback({ error: 'Bu odadan yasaklandınız' });
-        }
-
-        const mutedParticipants = (await get(`${roomId}:mutedParticipants`)) ?? [];
-        const controlledByMods = (await get(`${roomId}:controlledByMods`)) ?? false;
-
-        const roomOwner = await get(`${roomId}:owner`);
-
-        if (roomParticipants.length == 0) {
-            return callback({
-                error: 'Katılımcı listesi alınamadı, lütfen tekrar deneyin',
-            });
-        }
+        const roomName = `${addTurkishPossessiveSuffix(json.username)} odası`;
 
         const currentParticipant: Participant = {
             id: json.id,
             username: json.username,
             avatar: json.avatar,
             avatarDecoration: json?.avatarDecoration ?? 0,
-            owner: roomOwner == json.id,
-            moderator: roomOwner == json.id,
+            owner: true,
+            moderator: true,
             sid: socket.id,
         };
 
-        await set(`${roomId}:users`, [...roomParticipants, currentParticipant]);
+        await multipleSet({
+            [`${roomId}:users`]: [currentParticipant],
+            [`${roomId}:timestamp`]: timestamp ?? 0,
+            [`${roomId}:anime`]: anime,
+            [`${roomId}:owner`]: json.id,
+            [`${roomId}:password`]: null,
+            [`${roomId}:bannedParticipants`]: [],
+            [`${roomId}:mutedParticipants`]: [],
+            [`${roomId}:controlledByMods`]: false,
+            [`${roomId}:name`]: roomName,
+        });
 
         await set(`sid:${socket.id}`, {
             room: roomId,
             id: json.id,
             participant: currentParticipant,
         });
-
-        const lastTimestamp = (await get(`${roomId}:timestamp`)) ?? 0;
-
-        const roomName = await get(`${roomId}:name`);
 
         socket.join(roomId);
 
@@ -150,15 +148,14 @@ export default class LoginIntoRoom {
         return callback({
             message: 'OK',
             details: {
-                bannedParticipants,
-                mutedParticipants,
-                timestamp: lastTimestamp,
+                bannedParticipants: [],
+                mutedParticipants: [],
+                timestamp: timestamp ?? 0,
                 roomId: roomId,
                 roomName: roomName,
-                controlledByMods,
+                controlledByMods: false,
             },
+            system: chatBotProps,
         });
     }
 }
-
-export { CoreParticipant, Participant };

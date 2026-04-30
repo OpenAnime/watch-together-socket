@@ -4,7 +4,7 @@ import canDoModerationOperationOnTarget from '@utils/canDoModerationOperationOnT
 import sendSystemMessage from '@utils/systemMessage';
 import useSocket from '@utils/useSocket';
 
-import type { CoreParticipant } from './login';
+import type { CoreParticipant } from './create';
 
 export default class BanOrUnbanParticipant {
     async handle({ socket, io, data }: { socket: Socket; io: Server; data: any }) {

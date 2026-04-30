@@ -11,7 +11,6 @@ export default class CreateMessage {
             data.message.trim().length <= 250
         ) {
             const hook = useSocket(socket);
-
             if (hook?.error) return;
 
             const currentUser = await hook.getCurrentUser();

@@ -17,7 +17,7 @@ export default function useSocket(socket: Socket) {
 
     const socketId = socket.id;
 
-    const prefix = `room:${room}`;
+    const prefix = `${room}`;
 
     let cachedParticipants: Participant[] | null = null;
 
@@ -76,12 +76,13 @@ export default function useSocket(socket: Socket) {
 
             return socketRoomParticipants;
         },
-        getCurrentUser: async () => {
+        getCurrentUser: async (): Promise<Participant | null> => {
             const socketRoomParticipants = await getParticipants();
 
             if (socketRoomParticipants) {
                 const currentUser = socketRoomParticipants.find((user) => user.sid == socketId);
-                return currentUser;
+                if (currentUser) return currentUser;
+                else return null;
             }
 
             return null;
