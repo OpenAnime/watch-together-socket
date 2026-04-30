@@ -1,36 +1,29 @@
 import type { Socket } from 'socket.io';
 
-import { get } from '@utils/cache';
+import useSocket from '@utils/useSocket';
 
-import { Participant } from './login';
-
-export default class MuteOrUnmuteParticipant {
+export default class UpdatePlayerState {
     async handle({ socket, data }: { socket: Socket; data: any }) {
         const playing = data?.playing;
         if (typeof data?.playing !== 'boolean') return;
 
-        const rooms = Array.from(socket.rooms);
-        const room = rooms[1];
+        const hook = useSocket(socket);
 
-        if (!room) return;
+        if (hook?.error) return;
 
-        const socketId = socket.id;
         let pass = false;
 
-        const modRequired = (await get(`room:${room}:controlledByMods`)) ?? false;
-        if (modRequired) {
-            const socketRoomParticipants = (await get(`room:${room}:users`)) as Participant[];
+        const controlledByMods = await hook.roomControlledByMods();
 
-            if (socketRoomParticipants) {
-                const mod = socketRoomParticipants.find((user) => user.sid == socketId);
-                if (mod?.moderator) pass = true;
-            }
+        if (controlledByMods) {
+            const isMod = await hook.isModerator();
+            pass = isMod;
         } else {
             pass = true;
         }
 
         if (pass) {
-            socket.broadcast.to(room).emit('playerState', { playing });
+            hook.broadcastToEveryoneExceptAuthor('playerState', { playing });
         }
     }
 }

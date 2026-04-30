@@ -1,58 +1,52 @@
-import type { Server, Socket } from 'socket.io';
+import type { Socket } from 'socket.io';
 
-import { get, set } from '@utils/cache';
 import canDoModerationOperationOnTarget from '@utils/canDoModerationOperationOnTarget';
 import sendSystemMessage from '@utils/systemMessage';
-
-import { Participant } from './login';
+import useSocket from '@utils/useSocket';
 
 export default class MuteOrUnmuteParticipant {
-    async handle({ socket, io, data }: { socket: Socket; io: Server; data: any }) {
+    async handle({ socket, data }: { socket: Socket; data: any }) {
         const targetUserId = data?.target;
         if (!targetUserId) return;
 
-        const rooms = Array.from(socket.rooms);
-        const room = rooms[1];
+        const hook = useSocket(socket);
 
-        if (!room) return;
+        if (hook?.error) return;
 
-        const socketId = socket.id;
-        const socketRoomParticipants = (await get(`room:${room}:users`)) as Participant[];
+        const participants = await hook.getParticipants();
 
-        if (socketRoomParticipants) {
-            const mod = socketRoomParticipants.find((user) => user.sid == socketId);
-            const targetUser = socketRoomParticipants.find((user) => user.id == targetUserId);
+        if (participants) {
+            const currentUser = await hook.getCurrentUser();
+            const targetUser = await hook.getUserFromId(targetUserId);
 
-            if (canDoModerationOperationOnTarget(mod, targetUser)) {
-                const alreadyMutedParticipants = await get(`room:${room}:mutedParticipants`);
+            if (canDoModerationOperationOnTarget(currentUser, targetUser)) {
+                const mutedParticipants = await hook.getMutedParticipants();
 
                 let newMutedParticipants = [];
 
-                if (alreadyMutedParticipants.includes(targetUserId)) {
+                if (mutedParticipants.includes(targetUserId)) {
                     //unmute
-                    newMutedParticipants = alreadyMutedParticipants.filter(
-                        (x) => x != targetUserId,
-                    );
+                    newMutedParticipants = mutedParticipants.filter((x) => x != targetUserId);
 
                     sendSystemMessage(
-                        room,
-                        `${mod.username}, ${targetUser.username} kullanıcısının susturmasını kaldırdı.`,
+                        hook.getRoomPtr(),
+                        `${currentUser.username}, ${targetUser.username} kullanıcısının susturmasını kaldırdı.`,
                     );
                 } else {
                     //mute
-                    newMutedParticipants = [...alreadyMutedParticipants, targetUserId];
+                    newMutedParticipants = [...mutedParticipants, targetUserId];
 
                     sendSystemMessage(
-                        room,
-                        `${mod.username}, ${targetUser.username} kullanıcısını susturdu.`,
+                        hook.getRoomPtr(),
+                        `${currentUser.username}, ${targetUser.username} kullanıcısını susturdu.`,
                     );
                 }
 
-                io.in(room).emit('mute', {
+                hook.broadcastToEveryone('mute', {
                     mutedParticipants: newMutedParticipants,
                 });
 
-                await set(`room:${room}:mutedParticipants`, newMutedParticipants);
+                await hook.setRoomKey('mutedParticipants', newMutedParticipants);
             }
         }
     }

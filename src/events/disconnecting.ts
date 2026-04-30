@@ -1,31 +1,77 @@
 import type { Server, Socket } from 'socket.io';
 
-import { del, delWithPattern, get, set } from '@utils/cache';
+import type { Participant } from '@events/login';
+
+import { del, delWithPattern, get } from '@utils/cache';
+import useSocket from '@utils/useSocket';
+
+type SocketSession = {
+    room: string;
+    id: string;
+    participant?: Participant;
+};
+
+async function getParticipantsFromSocketIds(room: string, socketIds: string[]) {
+    const participants = await Promise.all(
+        socketIds.map(async (sid) => {
+            const session = (await get(`sid:${sid}`)) as SocketSession | null;
+
+            if (session?.room != room) return null;
+            return session.participant ?? null;
+        }),
+    );
+
+    return participants.filter((participant): participant is Participant => !!participant);
+}
 
 export default class Disconnect {
     async handle({ socket, io }: { socket: Socket; io: Server }) {
-        const rooms = Array.from(socket.rooms);
-        const room = rooms[1];
+        const hook = useSocket(socket);
+        if (hook?.error) return;
 
-        if (!room) return;
+        const room = hook.getRoomPtr();
+        const socketRoomParticipants = await hook.getParticipants();
+        const remainingSocketIds = [...(io.sockets.adapter.rooms.get(room) ?? [])].filter(
+            (sid) => sid != socket.id,
+        );
 
-        const socketId = socket.id;
-        const socketRoomParticipants = await get(`room:${room}:users`);
+        await del(`sid:${socket.id}`);
 
         if (socketRoomParticipants) {
-            const newParticipants = socketRoomParticipants.filter((user) => user.sid != socketId);
+            const newParticipants = socketRoomParticipants.filter((user) => user.sid != socket.id);
 
-            await set(`room:${room}:users`, newParticipants);
+            if (newParticipants.length == 0) {
+                const rebuiltParticipants = await getParticipantsFromSocketIds(
+                    room,
+                    remainingSocketIds,
+                );
 
-            io.in(room).emit('participants', {
+                if (rebuiltParticipants.length > 0) {
+                    await hook.setRoomKey('users', rebuiltParticipants);
+
+                    hook.broadcastToEveryone('participants', {
+                        participants: rebuiltParticipants,
+                    });
+
+                    return;
+                }
+
+                if (remainingSocketIds.length == 0) {
+                    await delWithPattern(`room:${room}:*`);
+                }
+
+                return;
+            }
+
+            await hook.setRoomKey('users', newParticipants);
+
+            hook.broadcastToEveryone('participants', {
                 participants: newParticipants,
             });
+
+            return;
         }
 
-        const remainingParticipants = io.sockets.adapter.rooms.get(room);
-        if (!remainingParticipants) {
-            await delWithPattern(`room:${room}:*`);
-            await del(`sid:${socketId}`);
-        }
+        if (remainingSocketIds.length == 0) await delWithPattern(`room:${room}:*`);
     }
 }

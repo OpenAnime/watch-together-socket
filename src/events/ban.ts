@@ -1,70 +1,67 @@
 import type { Server, Socket } from 'socket.io';
 
-import { get, set } from '@utils/cache';
 import canDoModerationOperationOnTarget from '@utils/canDoModerationOperationOnTarget';
 import sendSystemMessage from '@utils/systemMessage';
+import useSocket from '@utils/useSocket';
 
-import { CoreParticipant, Participant } from './login';
+import type { CoreParticipant } from './create';
 
 export default class BanOrUnbanParticipant {
     async handle({ socket, io, data }: { socket: Socket; io: Server; data: any }) {
         const targetUserId = data?.target;
         if (!targetUserId) return;
 
-        const rooms = Array.from(socket.rooms);
-        const room = rooms[1];
+        const hook = useSocket(socket);
+        if (hook?.error) return;
 
-        if (!room) return;
+        const room = hook.getRoomPtr();
+        const mod = await hook.getCurrentUser();
+        const targetUser = await hook.getUserFromId(targetUserId);
+        const bannedParticipants = await hook.getBannedParticipants();
 
-        const socketId = socket.id;
-        const socketRoomParticipants = (await get(`room:${room}:users`)) as Participant[];
+        let newBannedParticipants: CoreParticipant[] = bannedParticipants;
+        let shouldBroadcast = false;
 
-        if (socketRoomParticipants) {
-            const mod = socketRoomParticipants.find((user) => user.sid == socketId);
-            const targetUser = socketRoomParticipants.find((user) => user.id == targetUserId);
+        const isBanned = bannedParticipants.find((x) => x.id == targetUserId);
 
-            const bannedParticipants = ((await get(`room:${room}:bannedParticipants`)) ??
-                []) as CoreParticipant[];
-
-            let newBannedParticipants = [];
-
-            const isBanned = bannedParticipants.find((x) => x.id == targetUserId);
-
-            if (isBanned) {
-                // unban
-                if (mod?.moderator) {
-                    newBannedParticipants = bannedParticipants.filter((x) => x.id != targetUserId);
-
-                    sendSystemMessage(
-                        room,
-                        `${mod.username}, ${isBanned.username} kullanıcısının yasağını kaldırdı.`,
-                    );
-                }
-            } else if (mod && targetUser && canDoModerationOperationOnTarget(mod, targetUser)) {
-                //ban
-
-                const targetUserCpy = { ...targetUser };
-
-                delete targetUserCpy.sid;
-                delete targetUserCpy.owner;
-                delete targetUserCpy.moderator;
-
-                newBannedParticipants = [...bannedParticipants, targetUserCpy];
-
-                const getTargetSocket = io.sockets.sockets.get(targetUser.sid);
-                getTargetSocket.disconnect();
+        if (isBanned) {
+            // unban
+            if (mod?.moderator) {
+                newBannedParticipants = bannedParticipants.filter((x) => x.id != targetUserId);
+                shouldBroadcast = true;
 
                 sendSystemMessage(
                     room,
-                    `${mod.username}, ${targetUser.username} kullanıcısını yasakladı.`,
+                    `${mod.username}, ${isBanned.username} kullanıcısının yasağını kaldırdı.`,
                 );
             }
+        } else if (mod && targetUser && canDoModerationOperationOnTarget(mod, targetUser)) {
+            //ban
 
-            io.in(room).emit('ban', {
+            const targetUserCpy = { ...targetUser };
+
+            delete targetUserCpy.sid;
+            delete targetUserCpy.owner;
+            delete targetUserCpy.moderator;
+
+            newBannedParticipants = [...bannedParticipants, targetUserCpy];
+            shouldBroadcast = true;
+
+            const getTargetSocket = io.sockets.sockets.get(targetUser.sid);
+            getTargetSocket?.disconnect();
+
+            sendSystemMessage(
+                room,
+                `${mod.username}, ${targetUser.username} kullanıcısını yasakladı.`,
+            );
+        }
+
+        if (shouldBroadcast) {
+            hook.broadcastToEveryone('ban', {
                 bannedParticipants: newBannedParticipants,
             });
 
-            await set(`room:${room}:bannedParticipants`, newBannedParticipants);
+            await hook.setRoomKey('bannedParticipants', newBannedParticipants);
         }
     }
 }
