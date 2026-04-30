@@ -5,7 +5,7 @@ import { App } from 'uWebSockets.js';
 
 RapidEnv().load();
 
-import { delWithPattern } from '@utils/cache';
+import { delWithPattern, get } from '@utils/cache';
 
 import traverseEvents from './router';
 import { info, success, warn } from './utils/logger';
@@ -50,10 +50,61 @@ const chatBotProps = {
         res.writeStatus('200 OK').end('obezanime watch together socket 👌');
     });
 
+    app.get('/anime-info/:roomId', (res, req) => {
+        let aborted = false;
+        res.onAborted(() => {
+            aborted = true;
+        });
+
+        const roomId = req.getParameter(0).trim();
+
+        get(`room:${roomId}:anime`)
+            .then((anime) => {
+                if (aborted) return;
+
+                res.cork(() => {
+                    if (!anime) {
+                        res.writeStatus('404 Not Found')
+                            .writeHeader('Content-Type', 'application/json')
+                            .end(JSON.stringify({ error: 'Room not found' }));
+                        return;
+                    }
+
+                    res.writeStatus('200 OK')
+                        .writeHeader('Content-Type', 'application/json')
+                        .end(JSON.stringify(anime));
+                });
+            })
+            .catch(() => {
+                if (aborted) return;
+
+                res.cork(() => {
+                    res.writeStatus('500 Internal Server Error')
+                        .writeHeader('Content-Type', 'application/json')
+                        .end(JSON.stringify({ error: 'Internal server error' }));
+                });
+            });
+    });
+
     io.attachApp(app, {
         cors: {
             origin: process.env.CORS_ORIGIN,
         },
+    });
+
+    app.any('/*', (res, req) => {
+        const method = req.getMethod().toUpperCase();
+        const url = req.getUrl();
+
+        res.writeStatus('404 Not Found')
+            .writeHeader('Content-Type', 'application/json')
+            .end(
+                JSON.stringify({
+                    message: `Route ${method}:${url} not found`,
+                    error: 'Not Found',
+                    statusCode: 404,
+                }),
+            );
     });
 
     io.on('connection', (socket) => {
