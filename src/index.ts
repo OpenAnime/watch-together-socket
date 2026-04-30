@@ -19,6 +19,7 @@ const io = new Server();
 
 const PORT = +process.env.PORT || 3001;
 const HOST = process.env.HOST || '127.0.0.1';
+const CORS_ORIGIN = process.env.CORS_ORIGIN || '*';
 
 const redis = new Redis({
     port: +process.env.REDIS_PORT,
@@ -43,11 +44,25 @@ const chatBotProps = {
     username: process.env.CHATBOT_NAME,
 };
 
+function writeCorsHeaders(res) {
+    return res
+        .writeHeader('Access-Control-Allow-Origin', CORS_ORIGIN)
+        .writeHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
+        .writeHeader(
+            'Access-Control-Allow-Headers',
+            'Content-Type, Authorization, Gateway-Token, Mobile-Token, Client-Protocol-Model',
+        );
+}
+
 (async () => {
     const events = await traverseEvents();
 
+    app.options('/*', (res) => {
+        writeCorsHeaders(res.writeStatus('204 No Content')).end();
+    });
+
     app.get('/', (res, _) => {
-        res.writeStatus('200 OK').end('obezanime watch together socket 👌');
+        writeCorsHeaders(res.writeStatus('200 OK')).end('obezanime watch together socket 👌');
     });
 
     app.get('/anime-info/:roomId', (res, req) => {
@@ -64,13 +79,13 @@ const chatBotProps = {
 
                 res.cork(() => {
                     if (!anime) {
-                        res.writeStatus('404 Not Found')
+                        writeCorsHeaders(res.writeStatus('404 Not Found'))
                             .writeHeader('Content-Type', 'application/json')
                             .end(JSON.stringify({ error: 'Room not found' }));
                         return;
                     }
 
-                    res.writeStatus('200 OK')
+                    writeCorsHeaders(res.writeStatus('200 OK'))
                         .writeHeader('Content-Type', 'application/json')
                         .end(JSON.stringify(anime));
                 });
@@ -79,7 +94,7 @@ const chatBotProps = {
                 if (aborted) return;
 
                 res.cork(() => {
-                    res.writeStatus('500 Internal Server Error')
+                    writeCorsHeaders(res.writeStatus('500 Internal Server Error'))
                         .writeHeader('Content-Type', 'application/json')
                         .end(JSON.stringify({ error: 'Internal server error' }));
                 });
@@ -96,7 +111,7 @@ const chatBotProps = {
         const method = req.getMethod().toUpperCase();
         const url = req.getUrl();
 
-        res.writeStatus('404 Not Found')
+        writeCorsHeaders(res.writeStatus('404 Not Found'))
             .writeHeader('Content-Type', 'application/json')
             .end(
                 JSON.stringify({
